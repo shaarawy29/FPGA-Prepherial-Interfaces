@@ -32,7 +32,7 @@ use ieee.numeric_std.all ;
 --use UNISIM.VComponents.all;
 
 entity VGA_ctrl is
-  Port ( clk, reset: in std_logic;
+  Port ( clk, nrst: in std_logic;
          r_in, g_in, b_in : in std_logic;
          r, g, b : out std_logic_vector (3 downto 0);
          hsync , vsync : out std_logic);
@@ -85,8 +85,8 @@ begin
     '0';
     
     -- mod-800 horizontal sync counter
-    process (clk_25MHz, reset) begin
-        if(reset = '1') then 
+    process (clk_25MHz, nrst) begin
+        if(nrst = '1') then 
             h_count <= (others => '0');
         elsif rising_edge(clk_25MHz) then -- 25 MHz tick
             if h_end = '1' then
@@ -98,8 +98,8 @@ begin
     end process;
     
     -- mod-525 vertical sync counter
-    process (clk_25MHz, reset) begin
-        if (reset = '1') then
+    process (clk_25MHz, nrst) begin
+        if (nrst = '1') then
             v_count <= (others => '0');
         elsif (rising_edge(clk_25MHz)) and (h_end = '1') then
             if (v_end = '1') then
@@ -110,8 +110,8 @@ begin
         end if; 
     end process;
     
-    process(clk_25MHz, reset) begin
-        if (reset = '1') then 
+    process(clk_25MHz, nrst) begin
+        if (nrst = '1') then 
             video_on <= '0';
         elsif (rising_edge(clk_25MHz)) then
             if (h_count <= HD-1 and v_count <= VD-1) then

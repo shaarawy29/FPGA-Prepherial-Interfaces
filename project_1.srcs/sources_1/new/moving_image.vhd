@@ -34,6 +34,7 @@ use ieee.std_logic_unsigned.all;
 
 entity moving_image is
     Port ( clk, nrst: in std_logic;
+           xon, yon : in std_logic;
            r, g, b : out std_logic_vector (3 downto 0);
            hsync , vsync : out std_logic);
 end moving_image;
@@ -58,14 +59,56 @@ architecture Behavioral of moving_image is
       );
     END component;
     
+    
     signal curr_pixel : std_logic_vector (11 downto 0);
     signal temp_pixel : std_logic_vector (11 downto 0);
     signal index : unsigned (19 downto 0);
     signal video_on : std_logic;
     signal pos_x, pos_y : std_logic_vector (9 downto 0);
+    
+    -- shift parameters 
+    signal shift_x, shift_y : unsigned (9 downto 0);
+    
+    -- clk division counter
+    signal clk_divider_count : unsigned (19 downto 0) := "00000000000000000000";
+    signal clk_1MHz : std_logic := '0';
 
 
 begin
+
+    -- clock division code
+    process(clk, nrst)begin
+        if (clk'event and clk = '1') then
+            if(clk_divider_count = "11111111111111111111") then
+                clk_1MHz <= not(clk_1MHz);
+                clk_divider_count <= "00000000000000000000";
+            else
+                clk_divider_count <= clk_divider_count + 1;
+            end if;
+        end if;
+    end process;
+
+    process(clk_1MHz, nrst)begin
+        if(nrst = '0') then
+            shift_x <= (others => '0');
+            shift_y <= (others => '0');
+        elsif (clk_1MHz'event and clk_1MHz = '1')then
+            if(xon = '1') then
+                shift_x <= shift_x + 1;
+                if(shift_x = 540) then
+                    shift_x <= (others => '0');
+                end if;
+            end if;
+            
+            if(yon = '1') then
+                shift_y <= shift_y + 1;
+                if(shift_y = 380) then
+                    shift_y <= (others => '0');
+                end if;
+            end if;
+            
+        end if;
+    end process;
 
     VGA_controller_unit : VGA_controller port map ( clk => clk,
                                                     nrst => nrst,
@@ -84,8 +127,8 @@ begin
                                   dina => (others => '0'),
                                   douta => temp_pixel);
                                   
-    index <= ((unsigned(pos_y) * 100) + unsigned(pos_x)) when (pos_y <= 99 and pos_x <= 99) else (others => '0');
-    curr_pixel <= temp_pixel when (pos_y <= 99 and pos_x <= 99) else (others => '0');
+    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x) when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
+    curr_pixel <= temp_pixel when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
 
     -- red assignment
     r(3) <= curr_pixel(11) when (video_on = '1') else '0';
