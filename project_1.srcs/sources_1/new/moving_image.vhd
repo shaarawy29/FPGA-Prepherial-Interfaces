@@ -95,14 +95,14 @@ begin
         elsif (clk_1MHz'event and clk_1MHz = '1')then
             if(xon = '1') then
                 shift_x <= shift_x + 1;
-                if(shift_x = 540) then
+                if(shift_x = 640 - 1) then
                     shift_x <= (others => '0');
                 end if;
             end if;
             
             if(yon = '1') then
                 shift_y <= shift_y + 1;
-                if(shift_y = 380) then
+                if(shift_y = 480 - 1) then
                     shift_y <= (others => '0');
                 end if;
             end if;
@@ -127,8 +127,64 @@ begin
                                   dina => (others => '0'),
                                   douta => temp_pixel);
                                   
-    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x) when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
-    curr_pixel <= temp_pixel when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
+    process(pos_x, pos_y)begin
+        if(shift_x <= (640 - 100 - 1)) then
+            if(shift_y <= (480 - 100 - 1)) then
+                if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) then
+                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x);
+                    curr_pixel <= temp_pixel;
+                else 
+                    index <= (others => '0');
+                    curr_pixel <= (others => '0');
+                end if;
+            else
+                if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (480 - 100) - 1))) then
+                    index <= ((unsigned(pos_y)*100) + ((unsigned(pos_x)) - shift_x) + (480 - shift_y)*100);
+                    curr_pixel <= temp_pixel;
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (480 - 1))) then
+                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x);
+                    curr_pixel <= temp_pixel;
+                else
+                    index <= (others => '0');
+                    curr_pixel <= (others => '0');
+                end if;
+            end if;
+        elsif(shift_x > (640 - 100 - 1)) then
+            if(shift_y <= (480 - 100 - 1)) then
+                if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (640 - 100) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) then
+                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x) + (640 - shift_x)));
+                    curr_pixel <= temp_pixel;
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (640 - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99)))then
+                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x) - shift_x));
+                    curr_pixel <= temp_pixel;
+                else 
+                    index <= (others => '0');
+                    curr_pixel <= (others => '0');
+                end if;
+            else
+                if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (640 - 100) - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (480 - 100) - 1))) then
+                    index <= ((unsigned(pos_y)*100) + ((unsigned(pos_x)) + (640 - shift_x)) + (480 - shift_y)*100);
+                    curr_pixel <= temp_pixel;
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (640 - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (480 - 100) - 1)))then
+                    index <= ((unsigned(pos_y)*100) + ((unsigned(pos_x)) - shift_x) + (480 - shift_y)*100);
+                    curr_pixel <= temp_pixel;
+                elsif((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (640 - 100) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (480 - 1)))then
+                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) + (640 - shift_x));
+                    curr_pixel <= temp_pixel;
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (640 - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (480 - 1))) then
+                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x);
+                    curr_pixel <= temp_pixel;
+                else
+                    index <= (others => '0');
+                    curr_pixel <= (others => '0');
+                end if;
+            end if;
+        end if;
+    
+    end process;
+                                  
+--    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x) when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
+--    curr_pixel <= temp_pixel when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
 
     -- red assignment
     r(3) <= curr_pixel(11) when (video_on = '1') else '0';
