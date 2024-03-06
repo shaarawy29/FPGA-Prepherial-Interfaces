@@ -100,14 +100,14 @@ begin
         elsif (clk_1MHz'event and clk_1MHz = '1')then
             if(xon = '1') then
                 shift_x <= shift_x + 1;
-                if(shift_x = 640 - 1) then
+                if(shift_x = HD - 1) then
                     shift_x <= (others => '0');
                 end if;
             end if;
             
             if(yon = '1') then
                 shift_y <= shift_y + 1;
-                if(shift_y = 480 - 1) then
+                if(shift_y = VD - 1) then
                     shift_y <= (others => '0');
                 end if;
             end if;
@@ -133,8 +133,8 @@ begin
                                   douta => temp_pixel);
                                   
     process(pos_x, pos_y)begin
-        if(shift_x <= (HD - image_w - 1)) then
-            if(shift_y <= (VD - image_h - 1)) then
+        if(shift_x <= (HD - image_w)) then
+            if(shift_y <= (VD - image_h)) then
                 if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + image_w)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + image_h))) then
                     index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x)) - shift_x);
                     curr_pixel <= temp_pixel;
@@ -154,8 +154,8 @@ begin
                     curr_pixel <= (others => '0');
                 end if;
             end if;
-        elsif(shift_x > (HD - image_w - 1)) then
-            if(shift_y <= (VD - image_h - 1)) then
+        elsif(shift_x > (HD - image_w)) then
+            if(shift_y <= (VD - image_h)) then
                 if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (HD - image_w) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + image_h))) then
                     index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x) + (HD - shift_x)));
                     curr_pixel <= temp_pixel;
