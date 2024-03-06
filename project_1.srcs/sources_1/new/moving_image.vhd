@@ -59,6 +59,11 @@ architecture Behavioral of moving_image is
       );
     END component;
     
+    constant HD: integer := 640; --horizontal display area
+    constant VD: integer := 480; --vertical display area
+    constant image_w: integer := 100; -- image width
+    constant image_h: integer := 100; -- image height
+    
     
     signal curr_pixel : std_logic_vector (11 downto 0);
     signal temp_pixel : std_logic_vector (11 downto 0);
@@ -128,51 +133,51 @@ begin
                                   douta => temp_pixel);
                                   
     process(pos_x, pos_y)begin
-        if(shift_x <= (640 - 100 - 1)) then
-            if(shift_y <= (480 - 100 - 1)) then
-                if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) then
-                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x);
+        if(shift_x <= (HD - image_w - 1)) then
+            if(shift_y <= (VD - image_h - 1)) then
+                if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + image_w)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + image_h))) then
+                    index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x)) - shift_x);
                     curr_pixel <= temp_pixel;
                 else 
                     index <= (others => '0');
                     curr_pixel <= (others => '0');
                 end if;
             else
-                if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (480 - 100) - 1))) then
-                    index <= ((unsigned(pos_y)*100) + ((unsigned(pos_x)) - shift_x) + (480 - shift_y)*100);
+                if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + image_w)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (VD - image_h) - 1))) then
+                    index <= ((unsigned(pos_y)*image_w) + ((unsigned(pos_x)) - shift_x) + (VD - shift_y)*image_h);
                     curr_pixel <= temp_pixel;
-                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (480 - 1))) then
-                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x);
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + image_w)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (VD - 1))) then
+                    index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x)) - shift_x);
                     curr_pixel <= temp_pixel;
                 else
                     index <= (others => '0');
                     curr_pixel <= (others => '0');
                 end if;
             end if;
-        elsif(shift_x > (640 - 100 - 1)) then
-            if(shift_y <= (480 - 100 - 1)) then
-                if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (640 - 100) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) then
-                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x) + (640 - shift_x)));
+        elsif(shift_x > (HD - image_w - 1)) then
+            if(shift_y <= (VD - image_h - 1)) then
+                if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (HD - image_w) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + image_h))) then
+                    index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x) + (HD - shift_x)));
                     curr_pixel <= temp_pixel;
-                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (640 - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99)))then
-                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x) - shift_x));
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (HD - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + image_h)))then
+                    index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x) - shift_x));
                     curr_pixel <= temp_pixel;
                 else 
                     index <= (others => '0');
                     curr_pixel <= (others => '0');
                 end if;
             else
-                if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (640 - 100) - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (480 - 100) - 1))) then
-                    index <= ((unsigned(pos_y)*100) + ((unsigned(pos_x)) + (640 - shift_x)) + (480 - shift_y)*100);
+                if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (HD - image_w) - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (VD - image_h) - 1))) then
+                    index <= ((unsigned(pos_y)*image_w) + ((unsigned(pos_x)) + (HD - shift_x)) + (VD - shift_y)*image_w);
                     curr_pixel <= temp_pixel;
-                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (640 - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (480 - 100) - 1)))then
-                    index <= ((unsigned(pos_y)*100) + ((unsigned(pos_x)) - shift_x) + (480 - shift_y)*100);
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (HD - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (VD - image_h) - 1)))then
+                    index <= ((unsigned(pos_y)*image_h) + ((unsigned(pos_x)) - shift_x) + (VD - shift_y)*image_h);
                     curr_pixel <= temp_pixel;
-                elsif((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (640 - 100) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (480 - 1)))then
-                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) + (640 - shift_x));
+                elsif((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (HD - image_w) - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (VD - 1)))then
+                    index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x)) + (HD - shift_x));
                     curr_pixel <= temp_pixel;
-                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (640 - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (480 - 1))) then
-                    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x);
+                elsif((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (HD - 1)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (VD - 1))) then
+                    index <= (((unsigned(pos_y) - shift_y) * image_w) + (unsigned(pos_x)) - shift_x);
                     curr_pixel <= temp_pixel;
                 else
                     index <= (others => '0');
@@ -183,9 +188,6 @@ begin
     
     end process;
                                   
---    index <= (((unsigned(pos_y) - shift_y) * 100) + (unsigned(pos_x)) - shift_x) when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
---    curr_pixel <= temp_pixel when ((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + 99)) and (unsigned(pos_y) >= shift_y and unsigned(pos_y) <= (shift_y + 99))) else (others => '0');
-
     -- red assignment
     r(3) <= curr_pixel(11) when (video_on = '1') else '0';
     r(2) <= curr_pixel(10) when (video_on = '1') else '0';
