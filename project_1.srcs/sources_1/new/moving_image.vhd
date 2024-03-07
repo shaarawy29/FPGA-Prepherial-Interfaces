@@ -35,6 +35,7 @@ use ieee.std_logic_unsigned.all;
 entity moving_image is
     Port ( clk, nrst: in std_logic;
            up, dn, left, right : in std_logic;
+           speed1, speed2, speed3, speed4 : in std_logic;
            r, g, b : out std_logic_vector (3 downto 0);
            hsync , vsync : out std_logic);
 end moving_image;
@@ -81,6 +82,7 @@ architecture Behavioral of moving_image is
     signal shift_x_abs, shift_y_abs : signed (10 downto 0);
     signal left_right : std_logic_vector (1 downto 0);
     signal up_dn : std_logic_vector (1 downto 0);
+    signal speed : std_logic_vector (3 downto 0);
 
 
 begin
@@ -99,6 +101,7 @@ begin
     
     left_right <= (left & right);
     up_dn <= (up & dn);
+    speed <= (speed4 & speed3 & speed2 & speed1);
 
     process(clk_1MHz, nrst)begin
         if(nrst = '0') then
@@ -109,12 +112,12 @@ begin
                 when "00" | "11" => 
                     shift_x_abs <= shift_x_abs;
                 when "01" => 
-                    shift_x_abs <= shift_x_abs + 1;
+                    shift_x_abs <= shift_x_abs + TO_INTEGER(unsigned(speed));
                 when "10" => 
-                    shift_x_abs <= shift_x_abs - 1;
+                    shift_x_abs <= shift_x_abs - TO_INTEGER(unsigned(speed));
             end case;
             
-            if(shift_x_abs = HD - 1 or shift_x_abs = -(HD - 1)) then
+            if(shift_x_abs >= HD - 1 or shift_x_abs <= -(HD - 1)) then
                     shift_x_abs <= (others => '0');
                 end if;
             
@@ -122,12 +125,12 @@ begin
                 when "00" | "11" => 
                     shift_y_abs <= shift_y_abs;
                 when "01" => 
-                    shift_y_abs <= shift_y_abs + 1;
+                    shift_y_abs <= shift_y_abs + TO_INTEGER(unsigned(speed));
                 when "10" => 
-                    shift_y_abs <= shift_y_abs - 1;
+                    shift_y_abs <= shift_y_abs - TO_INTEGER(unsigned(speed));
             end case;
             
-            if(shift_y_abs = VD - 1 or shift_y_abs = -(VD - 1)) then
+            if(shift_y_abs >= VD - 1 or shift_y_abs <= -(VD - 1)) then
                     shift_y_abs <= (others => '0');
                 end if;
             
