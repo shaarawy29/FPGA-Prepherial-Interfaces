@@ -34,7 +34,7 @@ use ieee.std_logic_unsigned.all;
 
 entity moving_image is
     Port ( clk, nrst: in std_logic;
-           xon, yon : in std_logic;
+           up, dn, left, right : in std_logic;
            r, g, b : out std_logic_vector (3 downto 0);
            hsync , vsync : out std_logic);
 end moving_image;
@@ -67,16 +67,20 @@ architecture Behavioral of moving_image is
     
     signal curr_pixel : std_logic_vector (11 downto 0);
     signal temp_pixel : std_logic_vector (11 downto 0);
-    signal index : unsigned (19 downto 0);
+    signal index : unsigned (21 downto 0);
     signal video_on : std_logic;
     signal pos_x, pos_y : std_logic_vector (9 downto 0);
     
     -- shift parameters 
-    signal shift_x, shift_y : unsigned (9 downto 0);
+    signal shift_x, shift_y : unsigned (10 downto 0);
     
     -- clk division counter
     signal clk_divider_count : unsigned (19 downto 0) := "00000000000000000000";
     signal clk_1MHz : std_logic := '0';
+    
+    signal shift_x_abs, shift_y_abs : signed (10 downto 0);
+    signal left_right : std_logic_vector (1 downto 0);
+    signal up_dn : std_logic_vector (1 downto 0);
 
 
 begin
@@ -92,28 +96,46 @@ begin
             end if;
         end if;
     end process;
+    
+    left_right <= (left & right);
+    up_dn <= (up & dn);
 
     process(clk_1MHz, nrst)begin
         if(nrst = '0') then
-            shift_x <= (others => '0');
-            shift_y <= (others => '0');
+            shift_x_abs <= (others => '0');
+            shift_y_abs <= (others => '0');
         elsif (clk_1MHz'event and clk_1MHz = '1')then
-            if(xon = '1') then
-                shift_x <= shift_x + 1;
-                if(shift_x = HD - 1) then
-                    shift_x <= (others => '0');
-                end if;
-            end if;
+            case left_right is
+                when "00" | "11" => 
+                    shift_x_abs <= shift_x_abs;
+                when "01" => 
+                    shift_x_abs <= shift_x_abs + 1;
+                when "10" => 
+                    shift_x_abs <= shift_x_abs - 1;
+            end case;
             
-            if(yon = '1') then
-                shift_y <= shift_y + 1;
-                if(shift_y = VD - 1) then
-                    shift_y <= (others => '0');
+            if(shift_x_abs = HD - 1 or shift_x_abs = -(HD - 1)) then
+                    shift_x_abs <= (others => '0');
                 end if;
-            end if;
+            
+            case up_dn is
+                when "00" | "11" => 
+                    shift_y_abs <= shift_y_abs;
+                when "01" => 
+                    shift_y_abs <= shift_y_abs + 1;
+                when "10" => 
+                    shift_y_abs <= shift_y_abs - 1;
+            end case;
+            
+            if(shift_y_abs = VD - 1 or shift_y_abs = -(VD - 1)) then
+                    shift_y_abs <= (others => '0');
+                end if;
             
         end if;
     end process;
+    
+    shift_x <= unsigned(shift_x_abs) when shift_x_abs >= 0 else unsigned(HD + shift_x_abs);
+    shift_y <= unsigned(shift_y_abs) when shift_y_abs >= 0 else unsigned(VD + shift_y_abs);
 
     VGA_controller_unit : VGA_controller port map ( clk => clk,
                                                     nrst => nrst,
