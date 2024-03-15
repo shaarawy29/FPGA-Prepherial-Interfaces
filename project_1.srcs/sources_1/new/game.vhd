@@ -174,7 +174,7 @@ begin
     process (pos_x, pos_y)
     begin
         if((pos_x >= car_pos.x_start) and (pos_x <= car_pos.x_end) and (pos_y >= car_pos.y_start) and (pos_y <= car_pos.y_end)) then
-            index_car <= RESIZE((unsigned(pos_y) - unsigned(car_pos.y_start))*car_w + (unsigned(pos_x) - unsigned(car_pos.x_end)), 11);
+            index_car <= RESIZE((unsigned(pos_y) - unsigned(car_pos.y_start))*car_w + (unsigned(pos_x) - unsigned(car_pos.x_start)), 11);
         end if;
     end process;
 

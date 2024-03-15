@@ -35,7 +35,7 @@ use ieee.std_logic_unsigned.all;
 entity moving_image is
     Port ( clk, nrst: in std_logic;
            up, dn, left, right : in std_logic;
-           speed1, speed2, speed3, speed4 : in std_logic;
+           --speed1, speed2, speed3, speed4 : in std_logic;
            r, g, b : out std_logic_vector (3 downto 0);
            hsync , vsync : out std_logic);
 end moving_image;
@@ -62,8 +62,8 @@ architecture Behavioral of moving_image is
     
     constant HD: integer := 640; --horizontal display area
     constant VD: integer := 480; --vertical display area
-    constant image_w: integer := 100; -- image width
-    constant image_h: integer := 100; -- image height
+    constant image_w: integer := 40; -- image width
+    constant image_h: integer := 40; -- image height
     
     
     signal curr_pixel : std_logic_vector (11 downto 0);
@@ -101,7 +101,7 @@ begin
     
     left_right <= (left & right);
     up_dn <= (up & dn);
-    speed <= (speed4 & speed3 & speed2 & speed1);
+    speed <= "0011";--(speed4 & speed3 & speed2 & speed1);
 
     process(clk_1MHz, nrst)begin
         if(nrst = '0') then
@@ -165,7 +165,7 @@ begin
                     curr_pixel <= temp_pixel;
                 else 
                     index <= (others => '0');
-                    curr_pixel <= (others => '0');
+                    curr_pixel <= (others => '1');
                 end if;
             else
                 if((unsigned(pos_x) >= shift_x and unsigned(pos_x) <= (shift_x + image_w)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (VD - image_h) - 1))) then
@@ -176,7 +176,7 @@ begin
                     curr_pixel <= temp_pixel;
                 else
                     index <= (others => '0');
-                    curr_pixel <= (others => '0');
+                    curr_pixel <= (others => '1');
                 end if;
             end if;
         elsif(shift_x > (HD - image_w)) then
@@ -189,7 +189,7 @@ begin
                     curr_pixel <= temp_pixel;
                 else 
                     index <= (others => '0');
-                    curr_pixel <= (others => '0');
+                    curr_pixel <= (others => '1');
                 end if;
             else
                 if((unsigned(pos_x) >= 0 and unsigned(pos_x) <= (shift_x - (HD - image_w) - 1)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (shift_y - (VD - image_h) - 1))) then
@@ -206,7 +206,7 @@ begin
                     curr_pixel <= temp_pixel;
                 else
                     index <= (others => '0');
-                    curr_pixel <= (others => '0');
+                    curr_pixel <= (others => '1');
                 end if;
             end if;
         end if;
