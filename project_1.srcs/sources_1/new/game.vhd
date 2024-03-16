@@ -34,7 +34,7 @@ use ieee.std_logic_unsigned.all;
 
 entity game is
     Port (  clk, nrst: in std_logic;
-            up : in std_logic;
+            up, left, right : in std_logic;
             speed : in std_logic_vector (2 downto 0);
             r, g, b : out std_logic_vector (3 downto 0);
             hsync , vsync : out std_logic);
@@ -178,11 +178,16 @@ begin
         end if;
     end process;
 
+    -- choose which pixel to be printed on the screen
     process (pos_x, pos_y)
     begin
         if(pos_x >= 220 and pos_x <= (image_w + 220)) then
             if((pos_x >= car_pos.x_start) and (pos_x <= car_pos.x_end) and (pos_y >= car_pos.y_start) and (pos_y <= car_pos.y_end)) then
-                curr_pixel <= car_pixel;
+                if(car_pixel = X"000") then
+                    curr_pixel <= frame_pixel;
+                else
+                    curr_pixel <= car_pixel;
+                end if;
             else
                 curr_pixel <= frame_pixel;
             end if;
