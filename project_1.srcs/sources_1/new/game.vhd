@@ -180,12 +180,12 @@ begin
 
             -- moving obsticle 
             if(up = '1' and clash = '0') then
-                if(ob1_pos.y_end = VD) then
+                if(ob1_pos.y_end = VD - 1) then
                     ob1_pos.y_end <= (others => '0');
                 else
                     ob1_pos.y_end <= ob1_pos.y_end + 1;
                 end if;
-                if(ob1_pos.y_start = VD) then
+                if(ob1_pos.y_start = VD - 1) then
                     ob1_pos.y_start <= (others => '0');
                 else
                     ob1_pos.y_start <= ob1_pos.y_start + 1;
@@ -201,7 +201,7 @@ begin
                     if(car_pos.x_end >= 420)then
                         car_pos.x_start <= car_pos.x_start;
                         car_pos.x_end <= car_pos.x_end;
-                    else
+                    elsif(right_clash = '0') then
                         car_pos.x_start <= car_pos.x_start + 1;
                         car_pos.x_end <= car_pos.x_end + 1;
                     end if;
@@ -209,7 +209,7 @@ begin
                     if(car_pos.x_start <= 220)then
                         car_pos.x_start <= car_pos.x_start;
                         car_pos.x_end <= car_pos.x_end;
-                    else
+                    elsif(left_clash = '0') then
                         car_pos.x_start <= car_pos.x_start - 1;
                         car_pos.x_end <= car_pos.x_end - 1;
                     end if;
@@ -291,29 +291,29 @@ begin
     process (pos_x, pos_y)
     begin
         -- front clash 
-        if(((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
-            ((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end)) or
-            ((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
-            ((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end))) then
+        if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_start >= (ob1_pos.y_start + 1) and car_pos.y_start <= (ob1_pos.y_end + 1))) or
+            ((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_end >= (ob1_pos.y_start + 1) and car_pos.y_end <= (ob1_pos.y_end + 1))) or
+            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_start >= (ob1_pos.y_start + 1) and car_pos.y_start <= (ob1_pos.y_end + 1))) or
+            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_end >= (ob1_pos.y_start + 1) and car_pos.y_end <= (ob1_pos.y_end + 1)))) then
             clash <= '1';
         else
             clash <= '0';
         end if;
 
         -- left side clash
-        if (((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
-            ((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end))) then
+        if (((car_pos.x_start > (ob1_pos.x_start + 1) and car_pos.x_start < (ob1_pos.x_end + 1)) and (car_pos.y_start > (ob1_pos.y_start + 1) and car_pos.y_start < (ob1_pos.y_end + 1))) or
+            ((car_pos.x_start > (ob1_pos.x_start + 1) and car_pos.x_start < (ob1_pos.x_end + 1)) and (car_pos.y_end > (ob1_pos.y_start + 1) and car_pos.y_end < (ob1_pos.y_end + 1)))) then
             left_clash <= '1';
         else
             left_clash <= '0';        
         end if;
 
         -- right side clash
-        if(((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
-            ((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end))) then
+        if(((car_pos.x_end > (ob1_pos.x_start + 1) and car_pos.x_end < (ob1_pos.x_end + 1)) and (car_pos.y_start > (ob1_pos.y_start + 1) and car_pos.y_start < (ob1_pos.y_end + 1))) or
+            ((car_pos.x_end > (ob1_pos.x_start + 1) and car_pos.x_end < (ob1_pos.x_end + 1)) and (car_pos.y_end > (ob1_pos.y_start + 1) and car_pos.y_end < (ob1_pos.y_end + 1)))) then
             right_clash <= '1';
         else 
-            right_clash <= '1';
+            right_clash <= '0';
         end if;
     end process;
     
