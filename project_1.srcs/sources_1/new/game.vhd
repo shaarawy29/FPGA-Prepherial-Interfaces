@@ -144,6 +144,8 @@ architecture Behavioral of game is
 
     -- clash signals 
     signal clash : std_logic := '0';
+    signal left_clash : std_logic := '0';
+    signal right_clash : std_logic := '0';
 
 
 begin
@@ -168,7 +170,7 @@ begin
             shift_f <= ((others => '0'));
         elsif rising_edge(clk_1mhz) then
             -- moving the road
-            if(up = '1') then
+            if(up = '1' and clash = '0') then
                 if(shift_f = VD) then
                     shift_f <= (others => '0');
                 else
@@ -177,7 +179,7 @@ begin
             end if;
 
             -- moving obsticle 
-            if(up = '1') then
+            if(up = '1' and clash = '0') then
                 if(ob1_pos.y_end = VD) then
                     ob1_pos.y_end <= (others => '0');
                 else
@@ -215,8 +217,6 @@ begin
         end if;
     end process;
 
-    
-
     -- fetching the frame pixel from the memory
     process (pos_x, pos_y)
     begin
@@ -244,14 +244,14 @@ begin
     -- fetching the obstacle pixel from the memory 
     process (pos_x, pos_y)
     begin
-        if(shift_ob1 <= (VD - 40)) then
+        if(ob1_pos.y_start <= (VD - 40)) then
             if((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= unsigned(ob1_pos.y_start) and unsigned(pos_y) <= unsigned(ob1_pos.y_end))) then
                 index_ob1 <= RESIZE(((unsigned(pos_y) - unsigned(ob1_pos.y_start)) * 40) + (unsigned(pos_x) - unsigned(ob1_pos.x_start)), 11);
             else 
                 index_ob1 <= (others => '0');
             end if;
         else
-            if((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (unsigned(ob1_pos.y_start) - (VD - 40) - 1))) then
+            if((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= unsigned(ob1_pos.y_end))) then
                 index_ob1 <= RESIZE(((unsigned(pos_y)*40) + ((unsigned(pos_x)) - unsigned(ob1_pos.x_start)) + (VD - unsigned(ob1_pos.y_start))*image_h), 11);
             elsif((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= unsigned(ob1_pos.y_start) and unsigned(pos_y) <= (VD - 1))) then
                 index_ob1 <= RESIZE((((unsigned(pos_y) - unsigned(ob1_pos.y_start)) * 40) + (unsigned(pos_x)) - unsigned(ob1_pos.x_start)), 11);
@@ -264,6 +264,7 @@ begin
     -- choose which pixel to be printed on the screen
     process (pos_x, pos_y)
     begin
+        -- withing the display area
         if(pos_x >= 220 and pos_x <= (image_w + 220)) then
             if((pos_x >= car_pos.x_start) and (pos_x <= car_pos.x_end) and (pos_y >= car_pos.y_start) and (pos_y <= car_pos.y_end)) then
                 if(car_pixel = X"000") then
@@ -272,10 +273,15 @@ begin
                     curr_pixel <= car_pixel;
                 end if;
             elsif(pos_x >= ob1_pos.x_start) and (pos_x <= ob1_pos.x_end) and (pos_y >= ob1_pos.y_start) and (pos_y <= ob1_pos.y_end) then
-                curr_pixel <= ob1_pixel;
+                if(ob1_pixel = X"000") then
+                    curr_pixel <= frame_pixel;
+                else
+                    curr_pixel <= ob1_pixel;
+                end if;
             else
                 curr_pixel <= frame_pixel;
             end if;
+        -- outside the display area
         else
             curr_pixel <= ((others => '0'));
         end if;
@@ -284,13 +290,30 @@ begin
     -- clash detection
     process (pos_x, pos_y)
     begin
-        if((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) or
-            (car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) or 
-            (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end) or 
-            (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end)) then
+        -- front clash 
+        if(((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
+            ((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end)) or
+            ((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
+            ((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end))) then
             clash <= '1';
         else
             clash <= '0';
+        end if;
+
+        -- left side clash
+        if (((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
+            ((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end))) then
+            left_clash <= '1';
+        else
+            left_clash <= '0';        
+        end if;
+
+        -- right side clash
+        if(((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end)) or
+            ((car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) and (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end))) then
+            right_clash <= '1';
+        else 
+            right_clash <= '1';
         end if;
     end process;
     
