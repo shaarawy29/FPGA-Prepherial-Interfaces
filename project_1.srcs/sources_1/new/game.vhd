@@ -72,6 +72,17 @@ architecture Behavioral of game is
         );
     END COMPONENT;
 
+    COMPONENT ob1
+        PORT (
+            clka : IN STD_LOGIC;
+            ena : IN STD_LOGIC;
+            wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+            addra : IN STD_LOGIC_VECTOR(10 DOWNTO 0);
+            dina : IN STD_LOGIC_VECTOR(11 DOWNTO 0);
+            douta : OUT STD_LOGIC_VECTOR(11 DOWNTO 0)
+        );
+    END COMPONENT;
+
         ----------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
     constant VD: integer := 480; --vertical display area
@@ -122,9 +133,22 @@ architecture Behavioral of game is
     signal index_car : unsigned (10 downto 0);
     signal car_pixel : std_logic_vector (11 downto 0);
 
+    -- care red signals
+    signal ob1_pos : coordinates := (x_start => std_logic_vector(to_unsigned(250, 10)),
+                                     x_end => std_logic_vector(to_unsigned(290, 10)),
+                                     y_start => std_logic_vector(to_unsigned(100, 10)),
+                                     y_end => std_logic_vector(to_unsigned(140, 10)));
+    signal shift_ob1 : unsigned (6 downto 0);
+    signal index_ob1 : unsigned (10 downto 0);
+    signal ob1_pixel : std_logic_vector (11 downto 0);
+
+    -- clash signals 
+    signal clash : std_logic := '0';
+
 
 begin
 
+    left_right <= left & right;
     speed_condition <= not(speed) & '1' & X"FFFF";
     -- clock division code
     process(clk)begin
@@ -143,6 +167,7 @@ begin
         if(nrst = '0') then
             shift_f <= ((others => '0'));
         elsif rising_edge(clk_1mhz) then
+            -- moving the road
             if(up = '1') then
                 if(shift_f = VD) then
                     shift_f <= (others => '0');
@@ -150,12 +175,49 @@ begin
                     shift_f <= shift_f + 1;
                 end if;
             end if;
+
+            -- moving obsticle 
+            if(up = '1') then
+                if(ob1_pos.y_end = VD) then
+                    ob1_pos.y_end <= (others => '0');
+                else
+                    ob1_pos.y_end <= ob1_pos.y_end + 1;
+                end if;
+                if(ob1_pos.y_start = VD) then
+                    ob1_pos.y_start <= (others => '0');
+                else
+                    ob1_pos.y_start <= ob1_pos.y_start + 1;
+                end if;
+            end if;
+
+            -- moving the car
+            case left_right is
+                when "00" | "11" => 
+                    car_pos.x_start <= car_pos.x_start;
+                    car_pos.x_end <= car_pos.x_end;
+                when "01" => 
+                    if(car_pos.x_end >= 420)then
+                        car_pos.x_start <= car_pos.x_start;
+                        car_pos.x_end <= car_pos.x_end;
+                    else
+                        car_pos.x_start <= car_pos.x_start + 1;
+                        car_pos.x_end <= car_pos.x_end + 1;
+                    end if;
+                when "10" => 
+                    if(car_pos.x_start <= 220)then
+                        car_pos.x_start <= car_pos.x_start;
+                        car_pos.x_end <= car_pos.x_end;
+                    else
+                        car_pos.x_start <= car_pos.x_start - 1;
+                        car_pos.x_end <= car_pos.x_end - 1;
+                    end if;
+            end case;
         end if;
     end process;
 
     
 
-    
+    -- fetching the frame pixel from the memory
     process (pos_x, pos_y)
     begin
         if(pos_x >= 220 and pos_x <= (image_w + 220)) then
@@ -171,10 +233,31 @@ begin
         end if;
     end process;
     
+    -- fetching the car pixel from the memory
     process (pos_x, pos_y)
     begin
         if((pos_x >= car_pos.x_start) and (pos_x <= car_pos.x_end) and (pos_y >= car_pos.y_start) and (pos_y <= car_pos.y_end)) then
             index_car <= RESIZE((unsigned(pos_y) - unsigned(car_pos.y_start))*car_w + (unsigned(pos_x) - unsigned(car_pos.x_start)), 11);
+        end if;
+    end process;
+
+    -- fetching the obstacle pixel from the memory 
+    process (pos_x, pos_y)
+    begin
+        if(shift_ob1 <= (VD - 40)) then
+            if((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= unsigned(ob1_pos.y_start) and unsigned(pos_y) <= unsigned(ob1_pos.y_end))) then
+                index_ob1 <= RESIZE(((unsigned(pos_y) - unsigned(ob1_pos.y_start)) * 40) + (unsigned(pos_x) - unsigned(ob1_pos.x_start)), 11);
+            else 
+                index_ob1 <= (others => '0');
+            end if;
+        else
+            if((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= (unsigned(ob1_pos.y_start) - (VD - 40) - 1))) then
+                index_ob1 <= RESIZE(((unsigned(pos_y)*40) + ((unsigned(pos_x)) - unsigned(ob1_pos.x_start)) + (VD - unsigned(ob1_pos.y_start))*image_h), 11);
+            elsif((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= unsigned(ob1_pos.y_start) and unsigned(pos_y) <= (VD - 1))) then
+                index_ob1 <= RESIZE((((unsigned(pos_y) - unsigned(ob1_pos.y_start)) * 40) + (unsigned(pos_x)) - unsigned(ob1_pos.x_start)), 11);
+            else
+                index_ob1 <= (others => '0');
+            end if;
         end if;
     end process;
 
@@ -188,11 +271,26 @@ begin
                 else
                     curr_pixel <= car_pixel;
                 end if;
+            elsif(pos_x >= ob1_pos.x_start) and (pos_x <= ob1_pos.x_end) and (pos_y >= ob1_pos.y_start) and (pos_y <= ob1_pos.y_end) then
+                curr_pixel <= ob1_pixel;
             else
                 curr_pixel <= frame_pixel;
             end if;
         else
             curr_pixel <= ((others => '0'));
+        end if;
+    end process;
+
+    -- clash detection
+    process (pos_x, pos_y)
+    begin
+        if((car_pos.x_start >= ob1_pos.x_start and car_pos.x_start <= ob1_pos.x_end) or
+            (car_pos.x_end >= ob1_pos.x_start and car_pos.x_end <= ob1_pos.x_end) or 
+            (car_pos.y_start >= ob1_pos.y_start and car_pos.y_start <= ob1_pos.y_end) or 
+            (car_pos.y_end >= ob1_pos.y_start and car_pos.y_end <= ob1_pos.y_end)) then
+            clash <= '1';
+        else
+            clash <= '0';
         end if;
     end process;
     
@@ -222,6 +320,14 @@ begin
                             addra => std_logic_vector(index_car),
                             dina => (others => '0'),
                             douta => car_pixel);
+
+    car_red : ob1 PORT MAP (
+                            clka => clk,
+                            ena => video_on,
+                            wea => "0",
+                            addra => std_logic_vector(index_ob1),
+                            dina => (others => '0'),
+                            douta => ob1_pixel);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   
