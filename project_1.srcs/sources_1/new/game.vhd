@@ -83,6 +83,28 @@ architecture Behavioral of game is
         );
     END COMPONENT;
 
+    COMPONENT font_ROM
+    PORT (
+        clka : IN STD_LOGIC;
+        ena : IN STD_LOGIC;
+        addra : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+        douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+    );
+    END COMPONENT;
+
+    component binary_to_bcd IS
+        GENERIC(
+            bits   : INTEGER := 10;  --size of the binary input numbers in bits
+            digits : INTEGER := 3);  --number of BCD digits to convert to
+        PORT(
+            clk     : IN    STD_LOGIC;                             --system clock
+            reset_n : IN    STD_LOGIC;                             --active low asynchronus reset
+            ena     : IN    STD_LOGIC;                             --latches in new binary number and starts conversion
+            binary  : IN    STD_LOGIC_VECTOR(bits-1 DOWNTO 0);     --binary number to convert
+            busy    : OUT  STD_LOGIC;                              --indicates conversion in progress
+            bcd     : OUT  STD_LOGIC_VECTOR(digits*4-1 DOWNTO 0)); --resulting BCD number
+    END component;
+
         ----------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
     constant VD: integer := 480; --vertical display area
@@ -148,12 +170,79 @@ architecture Behavioral of game is
     signal left_clash : std_logic := '0';
     signal right_clash : std_logic := '0';
 
+    -- clk score signals 
+    signal clk_score_count : unsigned (26 downto 0) := ((others => '0'));
+    signal clk_score : unsigned(11 downto 0) := (others => '0') ;
+    signal rom_addr : std_logic_vector (7 downto 0);
+    signal rom_addr_tmp : std_logic_vector (7 downto 0);
+    signal font_word : std_logic_vector (7 downto 0);
+    signal font_bit : std_logic;
+    signal bcd_busy : std_logic;
+    signal digits : std_logic_vector (15 downto 0);
+    signal score_pixel : std_logic_vector (11 downto 0);
+    signal bcd_en : std_logic;
+    signal bcd1, bcd2, bcd3, bcd4 : std_logic_vector(3 downto 0);
+    -- signal add_tmp : std_logic_vector (11 downto 0);
+    signal add_tmp_unsigned : unsigned (7 downto 0);
 
 begin
 
     left_right <= left & right;
     up_dn <= up & dn;
     speed_condition <= not(speed) & '1' & X"FFFF";
+
+    -- score code (clk generation of 1Hz and counting)
+    process(clk)begin
+        if (rising_edge(clk) and front_clash = '0') then
+            if(clk_score_count = "000111111111111111111111111") then
+                clk_score <= clk_score + 1;
+                clk_score_count <= (others => '0') ;
+            else
+                clk_score_count <= clk_score_count + 1;
+            end if;
+        end if;
+    end process;
+
+    -- score fetching the correct address from the memory
+    bcd1 <= digits (3 downto 0);
+    bcd2 <= digits (7 downto 4);
+    bcd3 <= digits (11 downto 8);
+    bcd4 <= digits (15 downto 12);
+    process (pos_x, pos_y)
+        variable add_tmp : std_logic_vector (11 downto 0) := "000000000000";
+    begin
+        if(unsigned(pos_x) >= 0 and unsigned(pos_x) <= 7) then
+            add_tmp := (bcd4 * "00010000");
+            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
+        elsif(unsigned(pos_x) >= 8 and unsigned(pos_x) <= 15) then
+            add_tmp := (bcd3 * "00010000");
+            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
+        elsif(unsigned(pos_x) >= 16 and unsigned(pos_x) <= 23) then
+            add_tmp := (bcd2 * "00010000");
+            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
+        elsif(unsigned(pos_x) >= 24 and unsigned(pos_x) <= 31) then
+            add_tmp := (bcd1 * "00010000");
+            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
+        else 
+            rom_addr_tmp <= rom_addr_tmp; --"00000000" & pos_y(3 downto 0);
+        end if;
+    end process;
+
+    rom_addr <= rom_addr_tmp(7 downto 0);
+    font_bit <= font_word(7) when pos_x(2 downto 0) = "000" else
+        font_word(6) when pos_x(2 downto 0) = "001" else
+        font_word(5) when pos_x(2 downto 0) = "010" else
+        font_word(4) when pos_x(2 downto 0) = "011" else
+        font_word(3) when pos_x(2 downto 0) = "100" else
+        font_word(2) when pos_x(2 downto 0) = "101" else
+        font_word(1) when pos_x(2 downto 0) = "110" else
+        font_word(0) when pos_x(2 downto 0) = "111" else
+        '0';
+
+    score_pixel <= (others => font_bit); 
+
+    -----------------------------------------------------------------
+
     -- clock division code
     process(clk)begin
         if (rising_edge(clk)) then
@@ -216,6 +305,9 @@ begin
                         car_pos.x_start <= car_pos.x_start - 1;
                         car_pos.x_end <= car_pos.x_end - 1;
                     end if;
+                when others =>
+                        car_pos.x_start <= car_pos.x_start;
+                        car_pos.x_end <= car_pos.x_end;
             end case;
             --second moving front-back
             case up_dn is
@@ -238,6 +330,9 @@ begin
                         car_pos.y_start <= car_pos.y_start - 1;
                         car_pos.y_end <= car_pos.y_end - 1;
                     end if;
+                when others =>
+                        car_pos.y_start <= car_pos.y_start;
+                        car_pos.y_end <= car_pos.y_end; 
             end case;
         end if;
     end process;
@@ -306,6 +401,8 @@ begin
             else
                 curr_pixel <= frame_pixel;
             end if;
+        elsif (unsigned(pos_x) >= 0 and unsigned(pos_x) <=32 and unsigned(pos_y) <= 16) then
+            curr_pixel <= score_pixel;
         -- outside the display area
         else
             curr_pixel <= ((others => '0'));
@@ -382,6 +479,24 @@ begin
                             addra => std_logic_vector(index_ob1),
                             dina => (others => '0'),
                             douta => ob1_pixel);
+
+    rom : font_ROM PORT MAP (
+                            clka => clk,
+                            ena => '1',
+                            addra => rom_addr,
+                            douta => font_word);
+
+    bcd : binary_to_bcd 
+        generic map(
+            bits => 12,
+            digits => 4)
+        port map(
+            clk => clk,                           
+            reset_n => nrst,                      
+            ena => '1',                        
+            binary => std_logic_vector(clk_score),
+            busy => bcd_busy,                     
+            bcd => digits);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   
