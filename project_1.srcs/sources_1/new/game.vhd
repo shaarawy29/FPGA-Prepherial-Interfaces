@@ -252,11 +252,11 @@ begin
             end if;
         else
             if((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= 0 and unsigned(pos_y) <= unsigned(ob1_pos.y_end))) then
-                index_ob1 <= RESIZE(((unsigned(pos_y)*40) + ((unsigned(pos_x)) - unsigned(ob1_pos.x_start)) + (VD - unsigned(ob1_pos.y_start))*image_h), 11);
+                index_ob1 <= RESIZE(((unsigned(pos_y)*40) + ((unsigned(pos_x)) - unsigned(ob1_pos.x_start)) + (VD - unsigned(ob1_pos.y_start))*40), 11);
             elsif((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= unsigned(ob1_pos.y_start) and unsigned(pos_y) <= (VD - 1))) then
                 index_ob1 <= RESIZE((((unsigned(pos_y) - unsigned(ob1_pos.y_start)) * 40) + (unsigned(pos_x)) - unsigned(ob1_pos.x_start)), 11);
             else
-                index_ob1 <= (others => '0');
+                index_ob1 <= "10111110000";--(others => '0');
             end if;
         end if;
     end process;
