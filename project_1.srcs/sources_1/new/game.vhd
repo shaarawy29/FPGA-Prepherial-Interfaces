@@ -34,7 +34,7 @@ use ieee.std_logic_unsigned.all;
 
 entity game is
     Port (  clk, nrst: in std_logic;
-            up, left, right : in std_logic;
+            up, dn, left, right : in std_logic;
             speed : in std_logic_vector (2 downto 0);
             r, g, b : out std_logic_vector (3 downto 0);
             hsync , vsync : out std_logic);
@@ -143,7 +143,8 @@ architecture Behavioral of game is
     signal ob1_pixel : std_logic_vector (11 downto 0);
 
     -- clash signals 
-    signal clash : std_logic := '0';
+    signal front_clash : std_logic := '0';
+    signal back_clash : std_logic := '0';
     signal left_clash : std_logic := '0';
     signal right_clash : std_logic := '0';
 
@@ -151,6 +152,7 @@ architecture Behavioral of game is
 begin
 
     left_right <= left & right;
+    up_dn <= up & dn;
     speed_condition <= not(speed) & '1' & X"FFFF";
     -- clock division code
     process(clk)begin
@@ -170,7 +172,7 @@ begin
             shift_f <= ((others => '0'));
         elsif rising_edge(clk_1mhz) then
             -- moving the road
-            if(up = '1' and clash = '0') then
+            if(front_clash = '0') then
                 if(shift_f = VD) then
                     shift_f <= (others => '0');
                 else
@@ -179,7 +181,7 @@ begin
             end if;
 
             -- moving obsticle 
-            if(up = '1' and clash = '0') then
+            if(front_clash = '0') then
                 if(ob1_pos.y_end = VD - 1) then
                     ob1_pos.y_end <= (others => '0');
                 else
@@ -193,6 +195,7 @@ begin
             end if;
 
             -- moving the car
+            -- first moving left-rigt
             case left_right is
                 when "00" | "11" => 
                     car_pos.x_start <= car_pos.x_start;
@@ -212,6 +215,28 @@ begin
                     elsif(left_clash = '0') then
                         car_pos.x_start <= car_pos.x_start - 1;
                         car_pos.x_end <= car_pos.x_end - 1;
+                    end if;
+            end case;
+            --second moving front-back
+            case up_dn is
+                when "00" | "11" => 
+                    car_pos.y_start <= car_pos.y_start;
+                    car_pos.y_end <= car_pos.y_end;
+                when "01" => 
+                    if(car_pos.y_end >= VD - 40)then
+                        car_pos.y_start <= car_pos.y_start;
+                        car_pos.y_end <= car_pos.y_end;
+                    elsif(back_clash = '0') then
+                        car_pos.y_start <= car_pos.y_start + 1;
+                        car_pos.y_end <= car_pos.y_end + 1;
+                    end if;
+                when "10" => 
+                    if(car_pos.y_start <= 40)then
+                        car_pos.y_start <= car_pos.y_start;
+                        car_pos.y_end <= car_pos.y_end;
+                    elsif(front_clash = '0') then
+                        car_pos.y_start <= car_pos.y_start - 1;
+                        car_pos.y_end <= car_pos.y_end - 1;
                     end if;
             end case;
         end if;
@@ -291,13 +316,19 @@ begin
     process (pos_x, pos_y)
     begin
         -- front clash 
-        if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_start >= (ob1_pos.y_start + 1) and car_pos.y_start <= (ob1_pos.y_end + 1))) or
-            ((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_end >= (ob1_pos.y_start + 1) and car_pos.y_end <= (ob1_pos.y_end + 1))) or
-            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_start >= (ob1_pos.y_start + 1) and car_pos.y_start <= (ob1_pos.y_end + 1))) or
-            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_end >= (ob1_pos.y_start + 1) and car_pos.y_end <= (ob1_pos.y_end + 1)))) then
-            clash <= '1';
+        if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1))) or
+            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1)))) then
+            front_clash <= '1';
         else
-            clash <= '0';
+            front_clash <= '0';
+        end if;
+
+        -- back clash
+        if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_end = (ob1_pos.y_start + 1))) or
+            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_end = (ob1_pos.y_start + 1)))) then
+            back_clash <= '1';
+        else
+            back_clash <= '0';
         end if;
 
         -- left side clash
