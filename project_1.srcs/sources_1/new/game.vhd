@@ -194,7 +194,7 @@ begin
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
         if (rising_edge(clk) and front_clash = '0') then
-            if(clk_score_count = "000111111111111111111111111") then
+            if(clk_score_count = "011111111111111111111111111") then
                 clk_score <= clk_score + 1;
                 clk_score_count <= (others => '0') ;
             else
@@ -211,16 +211,16 @@ begin
     process (pos_x, pos_y)
         variable add_tmp : std_logic_vector (11 downto 0) := "000000000000";
     begin
-        if(unsigned(pos_x) >= 0 and unsigned(pos_x) <= 7) then
+        if(unsigned(pos_x) >= 188 and unsigned(pos_x) <= 195) then
             add_tmp := (bcd4 * "00010000");
             rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        elsif(unsigned(pos_x) >= 8 and unsigned(pos_x) <= 15) then
+        elsif(unsigned(pos_x) >= 196 and unsigned(pos_x) <= 203) then
             add_tmp := (bcd3 * "00010000");
             rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        elsif(unsigned(pos_x) >= 16 and unsigned(pos_x) <= 23) then
+        elsif(unsigned(pos_x) >= 204 and unsigned(pos_x) <= 211) then
             add_tmp := (bcd2 * "00010000");
             rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        elsif(unsigned(pos_x) >= 24 and unsigned(pos_x) <= 31) then
+        elsif(unsigned(pos_x) >= 212 and unsigned(pos_x) <= 219) then
             add_tmp := (bcd1 * "00010000");
             rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
         else 
@@ -315,7 +315,7 @@ begin
                     car_pos.y_start <= car_pos.y_start;
                     car_pos.y_end <= car_pos.y_end;
                 when "01" => 
-                    if(car_pos.y_end >= VD - 40)then
+                    if(car_pos.y_end >= VD - 50)then
                         car_pos.y_start <= car_pos.y_start;
                         car_pos.y_end <= car_pos.y_end;
                     elsif(back_clash = '0') then
@@ -323,7 +323,7 @@ begin
                         car_pos.y_end <= car_pos.y_end + 1;
                     end if;
                 when "10" => 
-                    if(car_pos.y_start <= 40)then
+                    if(car_pos.y_start <= 50)then
                         car_pos.y_start <= car_pos.y_start;
                         car_pos.y_end <= car_pos.y_end;
                     elsif(front_clash = '0') then
