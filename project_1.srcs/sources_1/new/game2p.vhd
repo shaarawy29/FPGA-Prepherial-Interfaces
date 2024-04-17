@@ -34,9 +34,11 @@ use ieee.std_logic_unsigned.all;
  
 entity game2p is
     Port (  clk, nrst: in std_logic;
-            upp2, dnp2, leftp2, rightp2 : in std_logic;
+            -- upp2, dnp2, leftp2, rightp2 : in std_logic;
             ps2d, ps2c: in std_logic;
             speed : in std_logic_vector (2 downto 0);
+            rx : in std_logic;
+            tx : out std_logic;
             r, g, b : out std_logic_vector (3 downto 0);
             hsync , vsync : out std_logic);
 end game2p;
@@ -125,6 +127,44 @@ architecture Behavioral of game2p is
             rx_done_tick : out std_logic;
             shift_en : out std_logic;
             dout : out std_logic_vector(7 downto 0)
+        );
+    end component;
+
+    component baud_gen is 
+        port(
+            clk : in std_logic ;
+            reset : in std_logic ;
+            dvsr : in std_logic_vector (10 downto 0);
+            tick : out std_logic
+        );
+    end component;
+
+    component uart_tx is
+        generic (
+            DBIT : integer := 8; -- # da ta b i t s
+            SB_TICK : integer := 16 -- # t i c k s f o r s t o p b i t s
+        );
+        port(
+            clk , reset : in std_logic ;
+            tx_start : in std_logic ;
+            s_tick : in std_logic ;
+            din : in std_logic_vector (7 downto 0);
+            tx_done_tick : out std_logic ;
+            tx : out std_logic
+        );
+    end component;
+
+    component uart_rx is
+        generic (
+            DBIT : integer := 8; -- # d a t a b i t s
+            SB_TICK : integer := 16 -- # t i c k s f o r s t o p b i t s
+        );
+        port(
+            clk , reset : in std_logic ;
+            rx : in std_logic ;
+            s_tick : in std_logic ;
+            rx_done_tick : out std_logic ;
+            dout : out std_logic_vector (7 downto 0)
         );
     end component;
 
@@ -234,13 +274,24 @@ architecture Behavioral of game2p is
     -- signal add_tmp : std_logic_vector (11 downto 0);
     signal add_tmp_unsigned : unsigned (7 downto 0);
 
+    --- uart signals ------------ uart
+    -- signal make_code: std_logic_vector(7 downto 0) := "00000000";
+    -- signal ascii: std_logic_vector(7 downto 0) := "00000000";
+    signal received_data: std_logic_vector(7 downto 0) := "00000000";
+    signal received_done, tx_data_done: std_logic;
+    signal baud_gen_tick: std_logic;
+    signal sent_data : std_logic_vector (7 downto 0) := "00000000";    
+
 begin
 
     left_right <= left & right;
     up_dn <= up & dn;
-    left_rightp2 <= leftp2 & rightp2;
-    up_dnp2 <= upp2 & dnp2;
+    -- left_rightp2 <= leftp2 & rightp2;
+    -- up_dnp2 <= upp2 & dnp2;
+    left_rightp2 <= received_data(3 downto 2);
+    up_dnp2 <= received_data (1 downto 0);
     speed_condition <= not(speed) & '1' & X"FFFF";
+    sent_data <= "0000" & left_right & up_dn;
 
     -- mapping from ascii to up, dn, left and right
     up <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
@@ -372,10 +423,10 @@ begin
     end process;
 
     -- moving the care
-    process (clk_1mhz, nrst)
+    process (clk, nrst)
     begin
         if(nrst = '0') then
-        elsif rising_edge(clk_1mhz) then
+        elsif rising_edge(clk) then
             -- moving the carp2
             -- first moving left-rigt
             case left_rightp2 is
@@ -767,6 +818,40 @@ begin
             rx_done_tick => rx_done_tick,
             shift_en => ps2rx_shift_en,
             dout => ps2rx_dout);
+    
+    baud_gen_unit : baud_gen 
+        port map(
+            clk => clk,
+            reset => rst,
+            dvsr => "00101000101",
+            tick => baud_gen_tick);
+
+    uart_tx_unit : uart_tx
+        generic map (
+            DBIT => 8, -- # da ta b i t s
+            SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
+        )
+        port map(
+            clk => clk,
+            reset => rst,
+            tx_start => '1',
+            s_tick => baud_gen_tick,
+            din => sent_data,
+            tx_done_tick => tx_data_done,
+            tx => tx);
+
+    uart_rx_unit : uart_rx
+        generic map (
+            DBIT => 8, -- # da ta b i t s
+            SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
+        )
+        port map(
+            clk => clk,
+            reset => rst,
+            rx => rx,
+            s_tick => baud_gen_tick,
+            rx_done_tick => received_done,
+            dout => received_data);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   
