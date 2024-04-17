@@ -280,40 +280,11 @@ begin
         end if;
     end process;
 
+    -- moving the care
     process (clk, nrst)
     begin
         if(nrst = '0') then
         elsif rising_edge(clk) then
-    end process;
-
-    process (clk_1mhz, nrst)
-    begin
-        if(nrst = '0') then
-            shift_f <= ((others => '0'));
-        elsif rising_edge(clk_1mhz) then
-            -- moving the road
-            if(front_clash = '0') then
-                if(shift_f = VD) then
-                    shift_f <= (others => '0');
-                else
-                    shift_f <= shift_f + 1;
-                end if;
-            end if;
-
-            -- moving obsticle 
-            if(front_clash = '0') then
-                if(ob1_pos.y_end = VD - 1) then
-                    ob1_pos.y_end <= (others => '0');
-                else
-                    ob1_pos.y_end <= ob1_pos.y_end + 1;
-                end if;
-                if(ob1_pos.y_start = VD - 1) then
-                    ob1_pos.y_start <= (others => '0');
-                else
-                    ob1_pos.y_start <= ob1_pos.y_start + 1;
-                end if;
-            end if;
-
             -- moving the car
             -- first moving left-rigt
             case left_right is
@@ -365,6 +336,36 @@ begin
                         car_pos.y_start <= car_pos.y_start;
                         car_pos.y_end <= car_pos.y_end; 
             end case;
+        end if;
+    end process;
+
+    process (clk_1mhz, nrst)
+    begin
+        if(nrst = '0') then
+            shift_f <= ((others => '0'));
+        elsif rising_edge(clk_1mhz) then
+            -- moving the road
+            if(front_clash = '0') then
+                if(shift_f = VD) then
+                    shift_f <= (others => '0');
+                else
+                    shift_f <= shift_f + 1;
+                end if;
+            end if;
+
+            -- moving obsticle 
+            if(front_clash = '0') then
+                if(ob1_pos.y_end = VD - 1) then
+                    ob1_pos.y_end <= (others => '0');
+                else
+                    ob1_pos.y_end <= ob1_pos.y_end + 1;
+                end if;
+                if(ob1_pos.y_start = VD - 1) then
+                    ob1_pos.y_start <= (others => '0');
+                else
+                    ob1_pos.y_start <= ob1_pos.y_start + 1;
+                end if;
+            end if;
         end if;
     end process;
 
