@@ -31,16 +31,17 @@ use ieee.std_logic_unsigned.all;
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
-
-entity game is
+ 
+entity game2p is
     Port (  clk, nrst: in std_logic;
-            up, dn, left, right : in std_logic;
+            -- up, dn, left, right : in std_logic;
+            ps2d, ps2c: in std_logic;
             speed : in std_logic_vector (2 downto 0);
             r, g, b : out std_logic_vector (3 downto 0);
             hsync , vsync : out std_logic);
-end game;
+end game2p;
 
-architecture Behavioral of game is
+architecture Behavioral of game2p is
 
     ----------------------------- component declaration ----------------------------------------
     component VGA_controller is
@@ -105,6 +106,17 @@ architecture Behavioral of game is
             bcd     : OUT  STD_LOGIC_VECTOR(digits*4-1 DOWNTO 0)); --resulting BCD number
     END component;
 
+    component ps2rx is
+        port (
+            clk, rst : in std_logic;
+            ps2d, ps2c : in std_logic;
+            rx_en : in std_logic;
+            rx_done_tick : out std_logic;
+            shift_en : out std_logic;
+            dout : out std_logic_vector(7 downto 0)
+        );
+    end component;
+
         ----------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
     constant VD: integer := 480; --vertical display area
@@ -127,9 +139,16 @@ architecture Behavioral of game is
     signal index : unsigned (19 downto 0);
     signal video_on : std_logic;
     signal pos_x, pos_y : std_logic_vector (9 downto 0);
+    signal rst : std_logic;
 
     signal clk_1mhz : std_logic;
     signal speed_condition : std_logic_vector (19 downto 0);
+
+    -- ps2 signal
+    signal up, dn, left, right : std_logic := '0';
+    signal rx_done_tick : std_logic;
+    signal ps2rx_shift_en : std_logic;
+    signal ps2rx_dout : std_logic_vector(7 downto 0);
     
     -- shift parameters 
     signal shift_x, shift_y : unsigned (10 downto 0);
@@ -190,6 +209,12 @@ begin
     left_right <= left & right;
     up_dn <= up & dn;
     speed_condition <= not(speed) & '1' & X"FFFF";
+
+    -- mapping from ascii to up, dn, left and right
+    up <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
+    dn <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
+    left <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
+    right <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
@@ -253,6 +278,12 @@ begin
                 clk_divider_count <= clk_divider_count + 1;
             end if;
         end if;
+    end process;
+
+    process (clk, nrst)
+    begin
+        if(nrst = '0') then
+        elsif rising_edge(clk) then
     end process;
 
     process (clk_1mhz, nrst)
@@ -498,6 +529,17 @@ begin
             busy => bcd_busy,                     
             bcd => digits);
 
+    ps2rx_unit : ps2rx
+        port map(
+            clk => clk, 
+            rst => rst,
+            ps2d => ps2d,
+            ps2c => ps2c,
+            rx_en => '1',
+            rx_done_tick => rx_done_tick,
+            shift_en => ps2rx_shift_en,
+            dout => ps2rx_dout);
+
     -------------------------------------- continous assignment ---------------------------------------
                                   
     -- red assignment
@@ -515,6 +557,9 @@ begin
     b(2) <= curr_pixel(2) when (video_on = '1') else '0';
     b(1) <= curr_pixel(1) when (video_on = '1') else '0';
     b(0) <= curr_pixel(0) when (video_on = '1') else '0';
+
+    -- rst assignment 
+    rst <= not nrst;
 
 end Behavioral;
 
