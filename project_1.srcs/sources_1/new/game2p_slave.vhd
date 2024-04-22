@@ -32,7 +32,7 @@ use ieee.std_logic_unsigned.all;
 --library UNISIM;
 --use UNISIM.VComponents.all;
  
-entity game2p is
+entity game2p_slave is
     Port (  clk, nrst: in std_logic;
             -- upp2, dnp2, leftp2, rightp2 : in std_logic;
             ps2d, ps2c: in std_logic;
@@ -41,9 +41,9 @@ entity game2p is
             tx : out std_logic;
             r, g, b : out std_logic_vector (3 downto 0);
             hsync , vsync : out std_logic);
-end game2p;
+end game2p_slave;
 
-architecture Behavioral of game2p is
+architecture Behavioral of game2p_slave is
 
     ----------------------------- component declaration ----------------------------------------
     component VGA_controller is
@@ -280,24 +280,27 @@ architecture Behavioral of game2p is
     signal received_data: std_logic_vector(7 downto 0) := "00000000";
     signal received_done, tx_data_done: std_logic;
     signal baud_gen_tick: std_logic;
-    signal sent_data : std_logic_vector (7 downto 0) := "00000000";    
+    signal sent_data : std_logic_vector (7 downto 0) := "00000000";  
+    
+    --- slave signals
+    signal upp2, dnp2, leftp2, rightp2 : std_logic := '0';
 
 begin
 
-    left_right <= left & right;
-    up_dn <= up & dn;
+    left_right <= received_data (3 downto 2);
+    up_dn <= received_data (1 downto 0);
     -- left_rightp2 <= leftp2 & rightp2;
     -- up_dnp2 <= upp2 & dnp2;
-    left_rightp2 <= received_data(3 downto 2);
-    up_dnp2 <= received_data (1 downto 0);
+    left_rightp2 <= leftp2 & rightp2;
+    up_dnp2 <= upp2 & dnp2;
     speed_condition <= not(speed) & '1' & X"FFFF";
-    sent_data <= "0000" & left_right & up_dn;
+    sent_data <= "0000" & left_rightp2 & up_dnp2;
 
     -- mapping from ascii to up, dn, left and right
-    up <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
-    dn <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
-    left <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
-    right <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
+    upp2 <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
+    dnp2 <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
+    leftp2 <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
+    rightp2 <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
