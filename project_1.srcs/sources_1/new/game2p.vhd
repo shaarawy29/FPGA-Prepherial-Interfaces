@@ -288,8 +288,8 @@ begin
     up_dn <= up & dn;
     -- left_rightp2 <= leftp2 & rightp2;
     -- up_dnp2 <= upp2 & dnp2;
-    left_rightp2 <= received_data(3 downto 2);
-    up_dnp2 <= received_data (1 downto 0);
+    -- left_rightp2 <= received_data(3 downto 2);
+    -- up_dnp2 <= received_data (1 downto 0);
     speed_condition <= not(speed) & '1' & X"FFFF";
     sent_data <= "0000" & left_right & up_dn;
 
@@ -298,6 +298,25 @@ begin
     dn <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
     left <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
     right <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
+
+    
+    -- assign the received data
+    process (clk, nrst)
+    begin
+        if(nrst = '0') then
+            up_dnp2 <= "00";
+            left_rightp2 <= "00";
+        elsif rising_edge(clk) then
+            if(received_done = '1') then
+                left_rightp2 <= received_data(3 downto 2);
+                up_dnp2 <= received_data (1 downto 0);
+            else
+                left_rightp2 <= "00";
+                up_dnp2 <= "00";
+            end if;
+            
+        end if;
+    end process;
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
@@ -599,7 +618,7 @@ begin
 
     -- clash detection ---------------------------------------------------------------------------------------------------------------------
     ------------------------- car with obstecle one ---------------------
-    process (pos_x, pos_y, clk)
+    process (pos_x, pos_y)
     begin
         -- front clash 
         if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1))) or
@@ -635,7 +654,7 @@ begin
     end process;
 
     --------------------- car clash detection with carp2----------------------------------------------
-    process (pos_x, pos_y, clk)
+    process (pos_x, pos_y)
     begin
         -- front clash 
         if(((car_pos.x_start >= (carp2_pos.x_start + 1) and car_pos.x_start <= (carp2_pos.x_end + 1)) and (car_pos.y_start = (carp2_pos.y_end + 1))) or
@@ -673,7 +692,7 @@ begin
     ------------------------------------------------------------------------------------------------------
 
     ------------------------- carp2 with obstecle one ---------------------
-    process (pos_x, pos_y, clk)
+    process (pos_x, pos_y)
     begin
         -- front clash 
         if(((carp2_pos.x_start >= (ob1_pos.x_start + 1) and carp2_pos.x_start <= (ob1_pos.x_end + 1)) and (carp2_pos.y_start = (ob1_pos.y_end + 1))) or
@@ -709,7 +728,7 @@ begin
     end process;
 
     --------------------- car clash detection with carp2----------------------------------------------
-    process (pos_x, pos_y, clk)
+    process (pos_x, pos_y)
     begin
         -- front clash 
         if(((carp2_pos.x_start >= (car_pos.x_start + 1) and carp2_pos.x_start <= (car_pos.x_end + 1)) and (carp2_pos.y_start = (car_pos.y_end + 1))) or
@@ -823,7 +842,7 @@ begin
         port map(
             clk => clk,
             reset => rst,
-            dvsr => "00101000101",
+            dvsr => "01010001011",
             tick => baud_gen_tick);
 
     uart_tx_unit : uart_tx
