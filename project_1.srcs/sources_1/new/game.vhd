@@ -31,6 +31,7 @@ use ieee.std_logic_unsigned.all;
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
+use work.mypkg.all;
 
 entity game is
     Port (  clk, nrst: in std_logic;
@@ -105,21 +106,14 @@ architecture Behavioral of game is
             bcd     : OUT  STD_LOGIC_VECTOR(digits*4-1 DOWNTO 0)); --resulting BCD number
     END component;
 
-        ----------------------- constat definition -----------------------------------
-    constant HD: integer := 640; --horizontal display area
-    constant VD: integer := 480; --vertical display area
-    constant image_w: integer := 200; -- image width
-    constant image_h: integer := 480; -- image height
-    constant car_w : integer := 40;
-    constant car_h : integer := 40;
-    
-    ------------------------------ type declaration -------------------------------------
-    type coordinates is record 
-        x_start : std_logic_vector (9 downto 0);
-        x_end : std_logic_vector (9 downto 0);
-        y_start : std_logic_vector(9 downto 0);
-        y_end : std_logic_vector(9 downto 0);
-    end record coordinates;
+    component clash_detection is
+        port (
+            nrst   : in std_logic;
+            clk : in std_logic;
+            master, slave : in coordinates;
+            pos_x, pos_y : in std_logic_vector(9 downto 0);
+            front_clash, back_clash, right_clash, left_clash : out std_logic);
+    end component;
 
     ----------------------------- signal definition ----------------------------------------
     signal curr_pixel : std_logic_vector (11 downto 0);
@@ -165,10 +159,10 @@ architecture Behavioral of game is
     signal ob1_pixel : std_logic_vector (11 downto 0);
 
     -- clash signals 
-    signal front_clash : std_logic := '0';
-    signal back_clash : std_logic := '0';
-    signal left_clash : std_logic := '0';
-    signal right_clash : std_logic := '0';
+    signal front_clash : std_logic;
+    signal back_clash : std_logic;
+    signal left_clash : std_logic;
+    signal right_clash : std_logic;
 
     -- clk score signals 
     signal clk_score_count : unsigned (26 downto 0) := ((others => '0'));
@@ -376,7 +370,7 @@ begin
             elsif((unsigned(pos_x) >= unsigned(ob1_pos.x_start) and unsigned(pos_x) <= unsigned(ob1_pos.x_end)) and (unsigned(pos_y) >= unsigned(ob1_pos.y_start) and unsigned(pos_y) <= (VD - 1))) then
                 index_ob1 <= RESIZE((((unsigned(pos_y) - unsigned(ob1_pos.y_start)) * 40) + (unsigned(pos_x)) - unsigned(ob1_pos.x_start)), 11);
             else
-                index_ob1 <= "10111110000";--(others => '0');
+                index_ob1 <= (others => '0');
             end if;
         end if;
     end process;
@@ -401,47 +395,11 @@ begin
             else
                 curr_pixel <= frame_pixel;
             end if;
-        elsif (unsigned(pos_x) >= 182 and unsigned(pos_x) <=215 and unsigned(pos_y) <= 16) then
+        elsif (unsigned(pos_x) >= 182 and unsigned(pos_x) <=215 and unsigned(pos_y) <= 15) then
             curr_pixel <= score_pixel;
         -- outside the display area
         else
             curr_pixel <= ((others => '0'));
-        end if;
-    end process;
-
-    -- clash detection
-    process (pos_x, pos_y)
-    begin
-        -- front clash 
-        if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1))) or
-            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1)))) then
-            front_clash <= '1';
-        else
-            front_clash <= '0';
-        end if;
-
-        -- back clash
-        if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_end = (ob1_pos.y_start + 1))) or
-            ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_end = (ob1_pos.y_start + 1)))) then
-            back_clash <= '1';
-        else
-            back_clash <= '0';
-        end if;
-
-        -- left side clash
-        if (((car_pos.x_start > (ob1_pos.x_start + 1) and car_pos.x_start < (ob1_pos.x_end + 1)) and (car_pos.y_start > (ob1_pos.y_start + 1) and car_pos.y_start < (ob1_pos.y_end + 1))) or
-            ((car_pos.x_start > (ob1_pos.x_start + 1) and car_pos.x_start < (ob1_pos.x_end + 1)) and (car_pos.y_end > (ob1_pos.y_start + 1) and car_pos.y_end < (ob1_pos.y_end + 1)))) then
-            left_clash <= '1';
-        else
-            left_clash <= '0';        
-        end if;
-
-        -- right side clash
-        if(((car_pos.x_end > (ob1_pos.x_start + 1) and car_pos.x_end < (ob1_pos.x_end + 1)) and (car_pos.y_start > (ob1_pos.y_start + 1) and car_pos.y_start < (ob1_pos.y_end + 1))) or
-            ((car_pos.x_end > (ob1_pos.x_start + 1) and car_pos.x_end < (ob1_pos.x_end + 1)) and (car_pos.y_end > (ob1_pos.y_start + 1) and car_pos.y_end < (ob1_pos.y_end + 1)))) then
-            right_clash <= '1';
-        else 
-            right_clash <= '0';
         end if;
     end process;
     
@@ -487,16 +445,28 @@ begin
                             douta => font_word);
 
     bcd : binary_to_bcd 
-        generic map(
-            bits => 12,
-            digits => 4)
-        port map(
-            clk => clk,                           
-            reset_n => nrst,                      
-            ena => '1',                        
-            binary => std_logic_vector(clk_score),
-            busy => bcd_busy,                     
-            bcd => digits);
+                        generic map(
+                            bits => 12,
+                            digits => 4)
+                        port map(
+                            clk => clk,                           
+                            reset_n => nrst,                      
+                            ena => '1',                        
+                            binary => std_logic_vector(clk_score),
+                            busy => bcd_busy,                     
+                            bcd => digits);
+
+    clash_detection_unit : clash_detection port map (
+                            nrst => nrst,
+                            clk => clk,
+                            master => car_pos,
+                            slave => ob1_pos,
+                            pos_x => pos_x,
+                            pos_y => pos_y,
+                            front_clash => front_clash,
+                            back_clash => back_clash,
+                            right_clash => right_clash,
+                            left_clash => left_clash);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   

@@ -110,14 +110,14 @@ set_property PACKAGE_PIN R2 [get_ports {speed[2]}]
 ##Buttons
 #set_property PACKAGE_PIN U18 [get_ports btnC]						
 	#set_property IOSTANDARD LVCMOS33 [get_ports btnC]
-# set_property PACKAGE_PIN T18 [get_ports upp2]						
-# 	set_property IOSTANDARD LVCMOS33 [get_ports upp2]
-# set_property PACKAGE_PIN W19 [get_ports leftp2]						
-# 	set_property IOSTANDARD LVCMOS33 [get_ports leftp2]
-# set_property PACKAGE_PIN T17 [get_ports rightp2]						
-# 	set_property IOSTANDARD LVCMOS33 [get_ports rightp2]
-# set_property PACKAGE_PIN U17 [get_ports dnp2]						
-# 	set_property IOSTANDARD LVCMOS33 [get_ports dnp2]
+# set_property PACKAGE_PIN T18 [get_ports up]						
+# 	set_property IOSTANDARD LVCMOS33 [get_ports up]
+# set_property PACKAGE_PIN W19 [get_ports left]						
+# 	set_property IOSTANDARD LVCMOS33 [get_ports left]
+# set_property PACKAGE_PIN T17 [get_ports right]						
+# 	set_property IOSTANDARD LVCMOS33 [get_ports right]
+# set_property PACKAGE_PIN U17 [get_ports dn]						
+# 	set_property IOSTANDARD LVCMOS33 [get_ports dn]
  
 
 
