@@ -70,46 +70,50 @@ begin
     -- process to get the font address either from the char or digits memory
     process (pos_x, pos_y)
     begin
-        if ((unsigned(pos_x(9 downto 3)) >= 10) and (unsigned(pos_x(9 downto 3)) <= 24) and (unsigned(pos_y(9 downto 4)) = 0)) then
+        if ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) <= 15)) then
             if((unsigned(pos_x(9 downto 3)) >= 10) and (unsigned(pos_x(9 downto 3)) <= 20)) then
-                font_rom_addr <= high_score_index(unsigned(pos_x(9 downto 3)) - 10) & pos_y(3 downto 0);
+                font_rom_addr <= high_score_index(to_integer(unsigned(pos_x(9 downto 3)) - 10)) & pos_y(3 downto 0);
             else
                 case unsigned(pos_x(9 downto 3)) is
-                    when "0010101" => font_rom_addr <= high_score_digits(15 downto 12) & pos_y(3 downto 0);
-                    when "0010110" => font_rom_addr <= high_score_digits(11 downto 8) & pos_y(3 downto 0);
-                    when "0010111" => font_rom_addr <= high_score_digits(7 downto 4) & pos_y(3 downto 0);
-                    when "0011000" => font_rom_addr <= high_score_digits(3 downto 0) & pos_y(3 downto 0);
+                    when "0010101" => font_rom_addr <= '0' & high_score_digits(15 downto 12) & pos_y(3 downto 0);
+                    when "0010110" => font_rom_addr <= '0' & high_score_digits(11 downto 8) & pos_y(3 downto 0);
+                    when "0010111" => font_rom_addr <= '0' & high_score_digits(7 downto 4) & pos_y(3 downto 0);
+                    when "0011000" => font_rom_addr <= '0' & high_score_digits(3 downto 0) & pos_y(3 downto 0);
                     when others => font_rom_addr <= ((others => '0'));
                 end case;
             end if;
-        else if ((unsigned(pos_x(9 downto 3)) >= 15) and (unsigned(pos_x(9 downto 3)) <= 24) and (unsigned(pos_y(9 downto 4)) = 0)) then
+        elsif ((unsigned(pos_x(9 downto 3)) >= 15) and (unsigned(pos_x(9 downto 3)) <= 24) and (unsigned(pos_y) <= 31)) then
             if((unsigned(pos_x(9 downto 3)) >= 15) and (unsigned(pos_x(9 downto 3)) <= 20)) then
-                font_rom_addr <= score_index(unsigned(pos_x(9 downto 3)) - 15) & pos_y(3 downto 0);
+                font_rom_addr <= score_index(to_integer(unsigned(pos_x(9 downto 3)) - 15)) & pos_y(3 downto 0);
             else
                 case unsigned(pos_x(9 downto 3)) is
-                    when "0010101" => font_rom_addr <= score_digits(15 downto 12) & pos_y(3 downto 0);
-                    when "0010110" => font_rom_addr <= score_digits(11 downto 8) & pos_y(3 downto 0);
-                    when "0010111" => font_rom_addr <= score_digits(7 downto 4) & pos_y(3 downto 0);
-                    when "0011000" => font_rom_addr <= score_digits(3 downto 0) & pos_y(3 downto 0);
+                    when "0010101" => font_rom_addr <= '0' & score_digits(15 downto 12) & pos_y(3 downto 0);
+                    when "0010110" => font_rom_addr <= '0' & score_digits(11 downto 8) & pos_y(3 downto 0);
+                    when "0010111" => font_rom_addr <= '0' & score_digits(7 downto 4) & pos_y(3 downto 0);
+                    when "0011000" => font_rom_addr <= '0' & score_digits(3 downto 0) & pos_y(3 downto 0);
                     when others => font_rom_addr <= ((others => '0'));
                 end case;
+            end if;
         end if;
     end process;
 
     -- process to get the font word either take the char or the digits memory data
     process (font_rom_addr)
     begin
-        if ((unsigned(pos_x(9 downto 3)) >= 10) and (unsigned(pos_x(9 downto 3)) <= 24) and (unsigned(pos_y(9 downto 4)) = 0)) then
+        if ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) <= 15)) then
             if((unsigned(pos_x(9 downto 3)) >= 10) and (unsigned(pos_x(9 downto 3)) <= 20)) then
                 font_word <= char_font_rom_word;
             else
                 font_word <= digits_font_rom_word;
             end if;
-        else if ((unsigned(pos_x(9 downto 3)) >= 15) and (unsigned(pos_x(9 downto 3)) <= 24) and (unsigned(pos_y(9 downto 4)) = 0)) then
+        elsif ((unsigned(pos_x(9 downto 3)) >= 15) and (unsigned(pos_x(9 downto 3)) <= 24) and (unsigned(pos_y) <= 31)) then
             if((unsigned(pos_x(9 downto 3)) >= 15) and (unsigned(pos_x(9 downto 3)) <= 20)) then
                 font_word <= char_font_rom_word;
             else
                 font_word <= digits_font_rom_word;
+            end if;
+        else 
+            font_word <= (others => '0');
         end if;
     end process;
 
@@ -134,7 +138,7 @@ begin
                 douta => digits_font_rom_word);
 
     alphabet_rom : block_rom_alphabet PORT MAP (
-                clka => clka,
+                clka => clk,
                 addra => font_rom_addr,
                 douta => char_font_rom_word);
 
@@ -147,7 +151,7 @@ begin
                 reset_n => nrst,                      
                 ena => '1',                        
                 binary => std_logic_vector(high_score),
-                busy => bcd_busy,                     
+                busy => bcd_busy1,                     
                 bcd => high_score_digits);
 
     bcd2 : binary_to_bcd 
@@ -162,4 +166,4 @@ begin
                 busy => bcd_busy2,                     
                 bcd => score_digits);
 
-end architecture;
+end behavioural;

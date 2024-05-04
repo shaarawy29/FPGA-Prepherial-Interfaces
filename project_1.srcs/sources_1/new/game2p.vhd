@@ -178,6 +178,15 @@ architecture Behavioral of game2p is
             front_clash, back_clash, right_clash, left_clash : out std_logic);
     end component;
 
+    component score_display is
+        port (
+            clk, nrst  : in std_logic;
+            pos_x, pos_y : in std_logic_vector (9 downto 0);
+            high_score, score : in std_logic_vector (11 downto 0);
+            score_pixel : out std_logic_vector (11 downto 0));
+    end component;
+    
+
     ----------------------------- signal definition ----------------------------------------
     signal curr_pixel : std_logic_vector (11 downto 0);
     signal temp_pixel : std_logic_vector (11 downto 0);
@@ -276,6 +285,8 @@ architecture Behavioral of game2p is
     
     constant one : std_logic := '1';
 
+    signal high_score : std_logic_Vector (11 downto 0) := (others => '1'); 
+
 
 begin
 
@@ -324,46 +335,6 @@ begin
             end if;
         end if;
     end process;
-
-    -- score fetching the correct address from the memory
-    bcd1 <= digits (3 downto 0);
-    bcd2 <= digits (7 downto 4);
-    bcd3 <= digits (11 downto 8);
-    bcd4 <= digits (15 downto 12);
-    process (pos_x, pos_y)
-        variable add_tmp : std_logic_vector (11 downto 0) := "000000000000";
-    begin
-        if(unsigned(pos_x) >= 183 and unsigned(pos_x) <= 190) then
-            add_tmp := (bcd4 * "00010000");
-            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        elsif(unsigned(pos_x) >= 191 and unsigned(pos_x) <= 198) then
-            add_tmp := (bcd3 * "00010000");
-            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        elsif(unsigned(pos_x) >= 199 and unsigned(pos_x) <= 206) then
-            add_tmp := (bcd2 * "00010000");
-            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        elsif(unsigned(pos_x) >= 207 and unsigned(pos_x) <= 214) then
-            add_tmp := (bcd1 * "00010000");
-            rom_addr_tmp <= add_tmp(7 downto 4) & pos_y(3 downto 0);
-        else 
-            rom_addr_tmp <= rom_addr_tmp; --"00000000" & pos_y(3 downto 0);
-        end if;
-    end process;
-
-    rom_addr <= rom_addr_tmp(7 downto 0);
-    font_bit <= font_word(7) when pos_x(2 downto 0) = "000" else
-        font_word(6) when pos_x(2 downto 0) = "001" else
-        font_word(5) when pos_x(2 downto 0) = "010" else
-        font_word(4) when pos_x(2 downto 0) = "011" else
-        font_word(3) when pos_x(2 downto 0) = "100" else
-        font_word(2) when pos_x(2 downto 0) = "101" else
-        font_word(1) when pos_x(2 downto 0) = "110" else
-        font_word(0) when pos_x(2 downto 0) = "111" else
-        '0';
-
-    score_pixel <= (others => font_bit); 
-
-    -----------------------------------------------------------------
 
     -- clock division code
     process(clk)begin
@@ -603,7 +574,7 @@ begin
             else
                 curr_pixel <= frame_pixel;
             end if;
-        elsif (unsigned(pos_x) >= 182 and unsigned(pos_x) <=215 and unsigned(pos_y) <= 16) then
+        elsif (unsigned(pos_x) >= 80 and unsigned(pos_x) <= 200 and unsigned(pos_y) <= 31) then
             curr_pixel <= score_pixel;
         -- outside the display area
         else
@@ -662,61 +633,61 @@ begin
                             douta => font_word);
 
     bcd : binary_to_bcd 
-        generic map(
-            bits => 12,
-            digits => 4)
-        port map(
-            clk => clk,                           
-            reset_n => nrst,                      
-            ena => '1',                        
-            binary => std_logic_vector(clk_score),
-            busy => bcd_busy,                     
-            bcd => digits);
+            generic map(
+                bits => 12,
+                digits => 4)
+            port map(
+                clk => clk,                           
+                reset_n => nrst,                      
+                ena => '1',                        
+                binary => std_logic_vector(clk_score),
+                busy => bcd_busy,                     
+                bcd => digits);
 
     ps2rx_unit : ps2rx
-        port map(
-            clk => clk, 
-            rst => rst,
-            ps2d => ps2d,
-            ps2c => ps2c,
-            rx_en => '1',
-            rx_done_tick => rx_done_tick,
-            shift_en => ps2rx_shift_en,
-            dout => ps2rx_dout);
+            port map(
+                clk => clk, 
+                rst => rst,
+                ps2d => ps2d,
+                ps2c => ps2c,
+                rx_en => '1',
+                rx_done_tick => rx_done_tick,
+                shift_en => ps2rx_shift_en,
+                dout => ps2rx_dout);
     
     baud_gen_unit : baud_gen 
-        port map(
-            clk => clk,
-            reset => rst,
-            dvsr => "01010001011",
-            tick => baud_gen_tick);
+            port map(
+                clk => clk,
+                reset => rst,
+                dvsr => "01010001011",
+                tick => baud_gen_tick);
 
     uart_tx_unit : uart_tx
-        generic map (
-            DBIT => 8, -- # da ta b i t s
-            SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
-        )
-        port map(
-            clk => clk,
-            reset => rst,
-            tx_start => rx_done_tick,
-            s_tick => baud_gen_tick,
-            din => sent_data,
-            tx_done_tick => tx_data_done,
-            tx => tx);
+            generic map (
+                DBIT => 8, -- # da ta b i t s
+                SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
+            )
+            port map(
+                clk => clk,
+                reset => rst,
+                tx_start => rx_done_tick,
+                s_tick => baud_gen_tick,
+                din => sent_data,
+                tx_done_tick => tx_data_done,
+                tx => tx);
 
     uart_rx_unit : uart_rx
-        generic map (
-            DBIT => 8, -- # da ta b i t s
-            SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
-        )
-        port map(
-            clk => clk,
-            reset => rst,
-            rx => rx,
-            s_tick => baud_gen_tick,
-            rx_done_tick => received_done,
-            dout => received_data);
+            generic map (
+                DBIT => 8, -- # da ta b i t s
+                SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
+            )
+            port map(
+                clk => clk,
+                reset => rst,
+                rx => rx,
+                s_tick => baud_gen_tick,
+                rx_done_tick => received_done,
+                dout => received_data);
 
     clash_detection_unit1 : clash_detection port map (
                 nrst => nrst,
@@ -765,6 +736,15 @@ begin
                 back_clash => back_clash_carp2(1),
                 right_clash => right_clash_carp2(1),
                 left_clash => left_clash_carp2(1));
+
+    score_display_unit : score_display port map(
+                clk => clk,
+                nrst => nrst,
+                pos_x => pos_x,
+                pos_y => pos_y,
+                high_score => high_score,
+                score => std_logic_vector(clk_score),
+                score_pixel => score_pixel);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   

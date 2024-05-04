@@ -23,7 +23,7 @@ package mypkg is
     end record coordinates;
 
     type high_score_array is array (natural range<>) of std_logic_vector(4 downto 0);
-    type current_score_array is array (natural range<>) of std_logic_vector(2 downto 0);
+    type current_score_array is array (natural range<>) of std_logic_vector(4 downto 0);
 
     ------------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
@@ -35,7 +35,7 @@ package mypkg is
     constant carp2_w : integer := 40;
     constant carp2_h : integer := 40;
 
-    constant high_score_index : high_score_array (0 to 9) := (
+    constant high_score_index : high_score_array (0 to 10) := (
         "00111", -- H index 7
         "01000", -- I index 8
         "00110", -- G index 6
