@@ -22,6 +22,9 @@ package mypkg is
         y_end : std_logic_vector(9 downto 0);
     end record coordinates;
 
+    type high_score_array is array (natural range<>) of std_logic_vector(4 downto 0);
+    type current_score_array is array (natural range<>) of std_logic_vector(2 downto 0);
+
     ------------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
     constant VD: integer := 480; --vertical display area
@@ -31,6 +34,29 @@ package mypkg is
     constant car_h : integer := 40;
     constant carp2_w : integer := 40;
     constant carp2_h : integer := 40;
+
+    constant high_score_index : high_score_array (0 to 9) := (
+        "00111", -- H index 7
+        "01000", -- I index 8
+        "00110", -- G index 6
+        "00111", -- H index 7
+        "11010", -- space index 26
+        "10010", -- S index 18
+        "00010", -- C index 2
+        "01110", -- O index 14
+        "10001", -- R index 17
+        "00100", -- E index 4
+        "11010"  -- space index 26
+    );
+
+    constant score_index : current_score_array (0 to 5) := (
+        "10010", -- S index 18
+        "00010", -- C index 2
+        "01110", -- O index 14
+        "10001", -- R index 17
+        "00100", -- E index 4
+        "11010"  -- space index 26
+    );
 
 
 end package mypkg;

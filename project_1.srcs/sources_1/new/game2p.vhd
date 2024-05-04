@@ -178,24 +178,6 @@ architecture Behavioral of game2p is
             front_clash, back_clash, right_clash, left_clash : out std_logic);
     end component;
 
-    --     ----------------------- constat definition -----------------------------------
-    -- constant HD: integer := 640; --horizontal display area
-    -- constant VD: integer := 480; --vertical display area
-    -- constant image_w: integer := 200; -- image width
-    -- constant image_h: integer := 480; -- image height
-    -- constant car_w : integer := 40;
-    -- constant car_h : integer := 40;
-    -- constant carp2_w : integer := 40;
-    -- constant carp2_h : integer := 40;
-    
-    -- ------------------------------ type declaration -------------------------------------
-    -- type coordinates is record 
-    --     x_start : std_logic_vector (9 downto 0);
-    --     x_end : std_logic_vector (9 downto 0);
-    --     y_start : std_logic_vector(9 downto 0);
-    --     y_end : std_logic_vector(9 downto 0);
-    -- end record coordinates;
-
     ----------------------------- signal definition ----------------------------------------
     signal curr_pixel : std_logic_vector (11 downto 0);
     signal temp_pixel : std_logic_vector (11 downto 0);
@@ -290,7 +272,10 @@ architecture Behavioral of game2p is
     signal received_data: std_logic_vector(7 downto 0) := "00000000";
     signal received_done, tx_data_done: std_logic;
     signal baud_gen_tick: std_logic;
-    signal sent_data : std_logic_vector (7 downto 0) := "00000000";    
+    signal sent_data : std_logic_vector (7 downto 0) := "00000000";   
+    
+    constant one : std_logic := '1';
+
 
 begin
 
@@ -330,7 +315,7 @@ begin
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
-        if (rising_edge(clk) and front_clash_car = "00") then
+        if (rising_edge(clk) and front_clash_car(0) = '0') then
             if(clk_score_count = "111111111111111111111111111") then
                 clk_score <= clk_score + 1;
                 clk_score_count <= (others => '0') ;
@@ -516,7 +501,7 @@ begin
             shift_f <= ((others => '0'));
         elsif rising_edge(clk_1mhz) then
             -- moving the road
-            if(front_clash_car = "00") then
+            if(one = '1') then
                 if(shift_f = VD) then
                     shift_f <= (others => '0');
                 else
@@ -525,7 +510,7 @@ begin
             end if;
 
             -- moving obsticle 
-            if(front_clash_car = "00" and front_clash_carp2 = "00") then
+            if(front_clash_car(0) = '0' and front_clash_carp2(0) = '0') then
                 if(ob1_pos.y_end = VD - 1) then
                     ob1_pos.y_end <= (others => '0');
                 else
@@ -626,156 +611,7 @@ begin
         end if;
     end process;
 
-    -- -- clash detection ---------------------------------------------------------------------------------------------------------------------
-    -- ------------------------- car with obstecle one ---------------------
-    -- process (pos_x, pos_y)
-    -- begin
-    --     -- front clash 
-    --     if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1))) or
-    --         ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_start = (ob1_pos.y_end + 1)))) then
-    --         front_clash_car(1) <= '1';
-    --     else
-    --         front_clash_car(1) <= '0';
-    --     end if;
 
-    --     -- back clash
-    --     if(((car_pos.x_start >= (ob1_pos.x_start + 1) and car_pos.x_start <= (ob1_pos.x_end + 1)) and (car_pos.y_end = (ob1_pos.y_start + 1))) or
-    --         ((car_pos.x_end >= (ob1_pos.x_start + 1) and car_pos.x_end <= (ob1_pos.x_end + 1)) and (car_pos.y_end = (ob1_pos.y_start + 1)))) then
-    --         back_clash_car(1) <= '1';
-    --     else
-    --         back_clash_car(1) <= '0';
-    --     end if;
-
-    --     -- left side clash
-    --     if (((car_pos.x_start > (ob1_pos.x_start + 1) and car_pos.x_start < (ob1_pos.x_end + 1)) and (car_pos.y_start > (ob1_pos.y_start + 1) and car_pos.y_start < (ob1_pos.y_end + 1))) or
-    --         ((car_pos.x_start > (ob1_pos.x_start + 1) and car_pos.x_start < (ob1_pos.x_end + 1)) and (car_pos.y_end > (ob1_pos.y_start + 1) and car_pos.y_end < (ob1_pos.y_end + 1)))) then
-    --         left_clash_car(1) <= '1';
-    --     else
-    --         left_clash_car(1) <= '0';        
-    --     end if;
-
-    --     -- right side clash_car(1)
-    --     if(((car_pos.x_end > (ob1_pos.x_start + 1) and car_pos.x_end < (ob1_pos.x_end + 1)) and (car_pos.y_start > (ob1_pos.y_start + 1) and car_pos.y_start < (ob1_pos.y_end + 1))) or
-    --         ((car_pos.x_end > (ob1_pos.x_start + 1) and car_pos.x_end < (ob1_pos.x_end + 1)) and (car_pos.y_end > (ob1_pos.y_start + 1) and car_pos.y_end < (ob1_pos.y_end + 1)))) then
-    --         right_clash_car(1) <= '1';
-    --     else 
-    --         right_clash_car(1) <= '0';
-    --     end if;
-    -- end process;
-
-    -- --------------------- car clash detection with carp2----------------------------------------------
-    -- process (pos_x, pos_y)
-    -- begin
-    --     -- front clash 
-    --     if(((car_pos.x_start >= (carp2_pos.x_start + 1) and car_pos.x_start <= (carp2_pos.x_end + 1)) and (car_pos.y_start = (carp2_pos.y_end + 1))) or
-    --         ((car_pos.x_end >= (carp2_pos.x_start + 1) and car_pos.x_end <= (carp2_pos.x_end + 1)) and (car_pos.y_start = (carp2_pos.y_end + 1)))) then
-    --         front_clash_car(0) <= '1';
-    --     else
-    --         front_clash_car(0) <= '0';
-    --     end if;
-
-    --     -- back clash
-    --     if(((car_pos.x_start >= (carp2_pos.x_start + 1) and car_pos.x_start <= (carp2_pos.x_end + 1)) and (car_pos.y_end = (carp2_pos.y_start + 1))) or
-    --         ((car_pos.x_end >= (carp2_pos.x_start + 1) and car_pos.x_end <= (carp2_pos.x_end + 1)) and (car_pos.y_end = (carp2_pos.y_start + 1)))) then
-    --         back_clash_car(0) <= '1';
-    --     else
-    --         back_clash_car(0) <= '0';
-    --     end if;
-
-    --     -- left side clash
-    --     if (((car_pos.x_start > (carp2_pos.x_start + 1) and car_pos.x_start < (carp2_pos.x_end + 1)) and (car_pos.y_start > (carp2_pos.y_start + 1) and car_pos.y_start < (carp2_pos.y_end + 1))) or
-    --         ((car_pos.x_start > (carp2_pos.x_start + 1) and car_pos.x_start < (carp2_pos.x_end + 1)) and (car_pos.y_end > (carp2_pos.y_start + 1) and car_pos.y_end < (carp2_pos.y_end + 1)))) then
-    --         left_clash_car(0) <= '1';
-    --     else
-    --         left_clash_car(0) <= '0';        
-    --     end if;
-
-    --     -- right side clash_car(0)
-    --     if(((car_pos.x_end > (carp2_pos.x_start + 1) and car_pos.x_end < (carp2_pos.x_end + 1)) and (car_pos.y_start > (carp2_pos.y_start + 1) and car_pos.y_start < (carp2_pos.y_end + 1))) or
-    --         ((car_pos.x_end > (carp2_pos.x_start + 1) and car_pos.x_end < (carp2_pos.x_end + 1)) and (car_pos.y_end > (carp2_pos.y_start + 1) and car_pos.y_end < (carp2_pos.y_end + 1)))) then
-    --         right_clash_car(0) <= '1';
-    --     else 
-    --         right_clash_car(0) <= '0';
-    --     end if;
-    -- end process;
-
-    -- ------------------------------------------------------------------------------------------------------
-
-    -- ------------------------- carp2 with obstecle one ---------------------
-    -- process (pos_x, pos_y)
-    -- begin
-    --     -- front clash 
-    --     if(((carp2_pos.x_start >= (ob1_pos.x_start + 1) and carp2_pos.x_start <= (ob1_pos.x_end + 1)) and (carp2_pos.y_start = (ob1_pos.y_end + 1))) or
-    --         ((carp2_pos.x_end >= (ob1_pos.x_start + 1) and carp2_pos.x_end <= (ob1_pos.x_end + 1)) and (carp2_pos.y_start = (ob1_pos.y_end + 1)))) then
-    --         front_clash_carp2(1) <= '1';
-    --     else
-    --         front_clash_carp2(1) <= '0';
-    --     end if;
-
-    --     -- back clash
-    --     if(((carp2_pos.x_start >= (ob1_pos.x_start + 1) and carp2_pos.x_start <= (ob1_pos.x_end + 1)) and (carp2_pos.y_end = (ob1_pos.y_start + 1))) or
-    --         ((carp2_pos.x_end >= (ob1_pos.x_start + 1) and carp2_pos.x_end <= (ob1_pos.x_end + 1)) and (carp2_pos.y_end = (ob1_pos.y_start + 1)))) then
-    --         back_clash_carp2(1) <= '1';
-    --     else
-    --         back_clash_carp2(1) <= '0';
-    --     end if;
-
-    --     -- left side clash
-    --     if (((carp2_pos.x_start > (ob1_pos.x_start + 1) and carp2_pos.x_start < (ob1_pos.x_end + 1)) and (carp2_pos.y_start > (ob1_pos.y_start + 1) and carp2_pos.y_start < (ob1_pos.y_end + 1))) or
-    --         ((carp2_pos.x_start > (ob1_pos.x_start + 1) and carp2_pos.x_start < (ob1_pos.x_end + 1)) and (carp2_pos.y_end > (ob1_pos.y_start + 1) and carp2_pos.y_end < (ob1_pos.y_end + 1)))) then
-    --         left_clash_carp2(1) <= '1';
-    --     else
-    --         left_clash_carp2(1) <= '0';        
-    --     end if;
-
-    --     -- right side clash_carp2(1)
-    --     if(((carp2_pos.x_end > (ob1_pos.x_start + 1) and carp2_pos.x_end < (ob1_pos.x_end + 1)) and (carp2_pos.y_start > (ob1_pos.y_start + 1) and carp2_pos.y_start < (ob1_pos.y_end + 1))) or
-    --         ((carp2_pos.x_end > (ob1_pos.x_start + 1) and carp2_pos.x_end < (ob1_pos.x_end + 1)) and (carp2_pos.y_end > (ob1_pos.y_start + 1) and carp2_pos.y_end < (ob1_pos.y_end + 1)))) then
-    --         right_clash_carp2(1) <= '1';
-    --     else 
-    --         right_clash_carp2(1) <= '0';
-    --     end if;
-    -- end process;
-
-    -- --------------------- car clash detection with carp2----------------------------------------------
-    -- process (pos_x, pos_y)
-    -- begin
-    --     -- front clash 
-    --     if(((carp2_pos.x_start >= (car_pos.x_start + 1) and carp2_pos.x_start <= (car_pos.x_end + 1)) and (carp2_pos.y_start = (car_pos.y_end + 1))) or
-    --         ((carp2_pos.x_end >= (car_pos.x_start + 1) and carp2_pos.x_end <= (car_pos.x_end + 1)) and (carp2_pos.y_start = (car_pos.y_end + 1)))) then
-    --         front_clash_carp2(0) <= '1';
-    --     else
-    --         front_clash_carp2(0) <= '0';
-    --     end if;
-
-    --     -- back clash
-    --     if(((carp2_pos.x_start >= (car_pos.x_start + 1) and carp2_pos.x_start <= (car_pos.x_end + 1)) and (carp2_pos.y_end = (car_pos.y_start + 1))) or
-    --         ((carp2_pos.x_end >= (car_pos.x_start + 1) and carp2_pos.x_end <= (car_pos.x_end + 1)) and (carp2_pos.y_end = (car_pos.y_start + 1)))) then
-    --         back_clash_carp2(0) <= '1';
-    --     else
-    --         back_clash_carp2(0) <= '0';
-    --     end if;
-
-    --     -- left side clash
-    --     if (((carp2_pos.x_start > (car_pos.x_start + 1) and carp2_pos.x_start < (car_pos.x_end + 1)) and (carp2_pos.y_start > (car_pos.y_start + 1) and carp2_pos.y_start < (car_pos.y_end + 1))) or
-    --         ((carp2_pos.x_start > (car_pos.x_start + 1) and carp2_pos.x_start < (car_pos.x_end + 1)) and (carp2_pos.y_end > (car_pos.y_start + 1) and carp2_pos.y_end < (car_pos.y_end + 1)))) then
-    --         left_clash_carp2(0) <= '1';
-    --     else
-    --         left_clash_carp2(0) <= '0';        
-    --     end if;
-
-    --     -- right side clash_carp2(0)
-    --     if(((carp2_pos.x_end > (car_pos.x_start + 1) and carp2_pos.x_end < (car_pos.x_end + 1)) and (carp2_pos.y_start > (car_pos.y_start + 1) and carp2_pos.y_start < (car_pos.y_end + 1))) or
-    --         ((carp2_pos.x_end > (car_pos.x_start + 1) and carp2_pos.x_end < (car_pos.x_end + 1)) and (carp2_pos.y_end > (car_pos.y_start + 1) and carp2_pos.y_end < (car_pos.y_end + 1)))) then
-    --         right_clash_carp2(0) <= '1';
-    --     else 
-    --         right_clash_carp2(0) <= '0';
-    --     end if;
-    -- end process;
-
-
-    -------------------------------------- clash detection ----------------------------------------------------------------------------------------------
-    
     ----------------------- module instantiation ----------------------------------------------
     VGA_controller_unit : VGA_controller port map ( clk => clk,
                                                     nrst => nrst,

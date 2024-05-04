@@ -295,6 +295,10 @@ architecture Behavioral of game2p_slave is
     --- slave signals
     signal upp2, dnp2, leftp2, rightp2 : std_logic := '0';
 
+
+    constant one : std_logic := '1';
+    
+
 begin
 
     -- left_right <= received_data (3 downto 2);
@@ -332,7 +336,7 @@ begin
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
-        if (rising_edge(clk) and front_clash_carp2 = "00") then
+        if (rising_edge(clk) and front_clash_carp2(0) = '0') then
             if(clk_score_count = "111111111111111111111111111") then
                 clk_score <= clk_score + 1;
                 clk_score_count <= (others => '0') ;
@@ -518,7 +522,7 @@ begin
             shift_f <= ((others => '0'));
         elsif rising_edge(clk_1mhz) then
             -- moving the road
-            if(front_clash_carp2 = "00") then
+            if(one = '1') then
                 if(shift_f = VD) then
                     shift_f <= (others => '0');
                 else
@@ -527,7 +531,7 @@ begin
             end if;
 
             -- moving obsticle 
-            if(front_clash_car = "00" and front_clash_carp2 = "00") then
+            if(front_clash_car(0) = '0' and front_clash_carp2(0) = '0') then
                 if(ob1_pos.y_end = VD - 1) then
                     ob1_pos.y_end <= (others => '0');
                 else
@@ -860,7 +864,7 @@ begin
     uart_tx_unit : uart_tx
         generic map (
             DBIT => 8, -- # da ta b i t s
-            SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
+            SB_TICK => 16 -- # t i c k s f o r  t o p sb i t s
         )
         port map(
             clk => clk,
