@@ -574,7 +574,9 @@ begin
             else
                 curr_pixel <= frame_pixel;
             end if;
-        elsif (unsigned(pos_x(9 downto 3)) >= 10 and unsigned(pos_x(9 downto 3)) <= 24 and unsigned(pos_y) <= 31) then
+        elsif ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 0) and (unsigned(pos_y) <= 15)) then
+            curr_pixel <= score_pixel;
+        elsif ((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 16) and (unsigned(pos_y) <= 31)) then
             curr_pixel <= score_pixel;
         -- outside the display area
         else
