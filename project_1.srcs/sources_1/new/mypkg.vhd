@@ -22,8 +22,8 @@ package mypkg is
         y_end : std_logic_vector(9 downto 0);
     end record coordinates;
 
-    type high_score_array is array (natural range<>) of std_logic_vector(4 downto 0);
-    type current_score_array is array (natural range<>) of std_logic_vector(4 downto 0);
+    type high_score_array is array (natural range<>) of std_logic_vector(5 downto 0);
+    type current_score_array is array (natural range<>) of std_logic_vector(5 downto 0);
 
     ------------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
@@ -36,26 +36,26 @@ package mypkg is
     constant carp2_h : integer := 40;
 
     constant high_score_index : high_score_array (0 to 10) := (
-        "00111", -- H index 7
-        "01000", -- I index 8
-        "00110", -- G index 6
-        "00111", -- H index 7
-        "11010", -- space index 26
-        "10010", -- S index 18
-        "00010", -- C index 2
-        "01110", -- O index 14
-        "10001", -- R index 17
-        "00100", -- E index 4
-        "11010"  -- space index 26
+        "010001", -- H index 17
+        "010010", -- I index 18
+        "010000", -- G index 16
+        "010001", -- H index 17
+        "100100", -- space index 36
+        "011100", -- S index 28
+        "001100", -- C index 12
+        "011000", -- O index 24
+        "011011", -- R index 27
+        "001110", -- E index 14
+        "100100"  -- space index 36
     );
 
     constant score_index : current_score_array (0 to 5) := (
-        "10010", -- S index 18
-        "00010", -- C index 2
-        "01110", -- O index 14
-        "10001", -- R index 17
-        "00100", -- E index 4
-        "11010"  -- space index 26
+        "011100", -- S index 28
+        "001100", -- C index 12
+        "011000", -- O index 24
+        "011011", -- R index 27
+        "001110", -- E index 14
+        "100100"  -- space index 36
     );
 
 
