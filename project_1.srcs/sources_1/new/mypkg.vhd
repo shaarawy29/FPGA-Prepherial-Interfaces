@@ -34,6 +34,8 @@ package mypkg is
     constant car_h : integer := 40;
     constant carp2_w : integer := 40;
     constant carp2_h : integer := 40;
+    
+    constant ps2_inc : integer := 5;
 
     constant high_score_index : high_score_array (0 to 10) := (
         "010001", -- H index 17

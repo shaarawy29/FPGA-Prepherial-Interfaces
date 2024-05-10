@@ -26,41 +26,41 @@ architecture behavioural of clash_detection is
 begin
 
     -- clash detection
-    process (pos_x, pos_y, nrst)
+    process (clk, nrst)
     begin
         if(nrst = '0') then
             front_clash <= '1';
             back_clash <= '1';
             left_clash <= '1';
             right_clash <= '1';
-        else
+        elsif(rising_edge(clk)) then
             -- front clash 
-            if(((master.x_start >= slave.x_start and master.x_start <= slave.x_end) and (master.y_start = slave.y_end)) or
-                ((master.x_end >= slave.x_start and master.x_end <= slave.x_end) and (master.y_start = slave.y_end))) then
+            if(((master.x_start >= slave.x_start and master.x_start <= slave.x_end) and ((master.y_start <= slave.y_end) and (master.y_start >= slave.y_end - ps2_inc))) or
+                ((master.x_end >= slave.x_start and master.x_end <= slave.x_end) and ((master.y_start <= slave.y_end) and (master.y_start >= slave.y_end - ps2_inc)))) then
                 front_clash <= '1';
             else
                 front_clash <= '0';
             end if;
 
             -- back clash
-            if(((master.x_start >= slave.x_start and master.x_start <= slave.x_end) and (master.y_end = slave.y_start)) or
-                ((master.x_end >= slave.x_start and master.x_end <= slave.x_end) and (master.y_end = slave.y_start))) then
+            if(((master.x_start >= slave.x_start and master.x_start <= slave.x_end) and ((master.y_end >= slave.y_start) and (master.y_end <= slave.y_start + ps2_inc))) or
+                ((master.x_end >= slave.x_start and master.x_end <= slave.x_end) and ((master.y_end >= slave.y_start) and (master.y_end <= slave.y_start + ps2_inc)))) then
                 back_clash <= '1';
             else
                 back_clash <= '0';
             end if;
 
             -- left side clash
-            if (((master.x_start = slave.x_end) and (master.y_start >= slave.y_start and master.y_start <= slave.y_end)) or
-                ((master.x_start = slave.x_end) and (master.y_end >= slave.y_start and master.y_end <= slave.y_end))) then
+            if ((((master.x_start <= slave.x_end) and (master.x_start >= slave.x_end - ps2_inc)) and (master.y_start >= slave.y_start and master.y_start <= slave.y_end)) or
+                (((master.x_start <= slave.x_end) and (master.x_start >= slave.x_end - ps2_inc)) and (master.y_end >= slave.y_start and master.y_end <= slave.y_end))) then
                 left_clash <= '1';
             else
                 left_clash <= '0';        
             end if;
 
             -- right side clash
-            if((master.x_end = slave.x_start) and ((master.y_start >= slave.y_start) and (master.y_start <= slave.y_end))) or
-                ((master.x_end = slave.x_start) and ((master.y_end >= slave.y_start) and (master.y_end <= slave.y_end))) then
+            if((((master.x_end >= slave.x_start) and (master.x_end <= slave.x_start + ps2_inc)) and ((master.y_start >= slave.y_start) and (master.y_start <= slave.y_end))) or
+               (((master.x_end >= slave.x_start) and (master.x_end <= slave.x_start + ps2_inc)) and ((master.y_end >= slave.y_start) and (master.y_end <= slave.y_end)))) then
                 right_clash <= '1';
             else 
                 right_clash <= '0';

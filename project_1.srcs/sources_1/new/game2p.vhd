@@ -286,6 +286,9 @@ architecture Behavioral of game2p is
     constant one : std_logic := '1';
 
     signal high_score : std_logic_Vector (11 downto 0) := (others => '1'); 
+    
+    -- signals used to speedd up the ps2
+--    signal up_trig, dn_trig, left_trig, right_trig : std_logic;
 
 
 begin
@@ -299,11 +302,11 @@ begin
     speed_condition <= not(speed) & '1' & X"FFFF";
     sent_data <= "0000" & left_right & up_dn;
 
-    -- mapping from ascii to up, dn, left and right
-    up <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
-    dn <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
-    left <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
-    right <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
+--    -- mapping from ascii to up, dn, left and right
+--    up <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
+--    dn <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
+--    left <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
+--    right <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
 
     
     -- assign the received data
@@ -327,7 +330,7 @@ begin
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
         if (rising_edge(clk) and front_clash_car(0) = '0') then
-            if(clk_score_count = "111111111111111111111111111") then
+            if(clk_score_count = "011111111111111111111111111") then
                 clk_score <= clk_score + 1;
                 clk_score_count <= (others => '0') ;
             else
@@ -344,6 +347,57 @@ begin
                 clk_divider_count <= (others => '0') ;
             else
                 clk_divider_count <= clk_divider_count + 1;
+            end if;
+        end if;
+    end process;
+    
+    -- speed up the ps2
+    process (clk, nrst)
+    variable speed_count : integer := 0;
+    begin
+        if(nrst = '0') then
+            up <= '0';
+            dn <= '0';
+            left <= '0';
+            right <= '0';
+        elsif(rising_edge(clk))then
+            if(rx_done_tick = '1') then
+                speed_count := ps2_inc;
+                -- mapping from ascii to up, dn, left and right
+                if(ps2rx_dout = "00011101")then
+                    up <= '1';
+                else
+                    up <= '0';
+                end if;
+                
+                if(ps2rx_dout = "00011011") then
+                    dn <= '1';
+                else
+                    dn <= '0';
+                end if;
+                
+                if(ps2rx_dout = "00011100") then
+                    left <= '1';
+                else
+                    left <= '0';
+                end if;
+                
+                if(ps2rx_dout = "00100011")then
+                    right <= '1';
+                else
+                    right <= '0';
+                end if;
+            elsif(speed_count = 0) then
+                up <= '0';
+                dn <= '0';
+                left <= '0';
+                right <= '0';
+            else
+                speed_count := speed_count - 1;
+                up <= up;
+                dn <= dn;
+                left <= left;
+                right <= right;
             end if;
         end if;
     end process;
@@ -369,8 +423,8 @@ begin
                     end if;
                 when "10" => 
                     if(car_pos.x_start <= 220)then
-                        car_pos.x_start <= car_pos.x_start;
-                        car_pos.x_end <= car_pos.x_end;
+                            car_pos.x_start <= car_pos.x_start;
+                            car_pos.x_end <= car_pos.x_end;
                     elsif(left_clash_car = "00") then
                         car_pos.x_start <= car_pos.x_start - 1;
                         car_pos.x_end <= car_pos.x_end - 1;
