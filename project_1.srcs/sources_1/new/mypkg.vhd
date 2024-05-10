@@ -22,8 +22,8 @@ package mypkg is
         y_end : std_logic_vector(9 downto 0);
     end record coordinates;
 
-    type high_score_array is array (natural range<>) of std_logic_vector(5 downto 0);
-    type current_score_array is array (natural range<>) of std_logic_vector(5 downto 0);
+    type char_array is array (natural range<>) of std_logic_vector(5 downto 0);
+--     type current_score_array is array (natural range<>) of std_logic_vector(5 downto 0);
 
     ------------------------- constat definition -----------------------------------
     constant HD: integer := 640; --horizontal display area
@@ -37,7 +37,7 @@ package mypkg is
     
     constant ps2_inc : integer := 5;
 
-    constant high_score_index : high_score_array (0 to 10) := (
+    constant high_score_index : char_array (0 to 10) := (
         "010001", -- H index 17
         "010010", -- I index 18
         "010000", -- G index 16
@@ -51,13 +51,49 @@ package mypkg is
         "100100"  -- space index 36
     );
 
-    constant score_index : current_score_array (0 to 5) := (
+    constant score_index : char_array (0 to 5) := (
         "011100", -- S index 28
         "001100", -- C index 12
         "011000", -- O index 24
         "011011", -- R index 27
         "001110", -- E index 14
         "100100"  -- space index 36
+    );
+    
+    constant player_one_end : char_array (0 to 14) := (
+       "011001", -- P index 25
+       "010101", -- L index 21
+       "001010", -- A index 10
+       "100010", -- Y index 34
+       "001110", -- E index 14
+       "011011", -- R index 27
+       "100100", -- space index 36
+       "000001", -- 1 index 1
+       "100100", -- space index 36
+       "011100", -- s index 28
+       "001100", -- c index 12
+       "011000", -- O index 24    
+       "011011", -- R index 27    
+       "001110", -- E index 14   
+       "100100"  -- space index 36
+    );           
+    
+    constant player_two_end : char_array (0 to 14) := (
+       "011001", -- P index 25
+       "010101", -- L index 21
+       "001010", -- A index 10
+       "100010", -- Y index 34
+       "001110", -- E index 14
+       "011011", -- R index 27
+       "100100", -- space index 36
+       "000010", -- 2 index 2
+       "100100", -- space index 36
+       "011100", -- s index 28
+       "001100", -- c index 12
+       "011000", -- O index 24    
+       "011011", -- R index 27    
+       "001110", -- E index 14   
+       "100100"  -- space index 36
     );
 
 

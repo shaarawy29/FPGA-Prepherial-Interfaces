@@ -186,6 +186,15 @@ architecture Behavioral of game2p is
             score_pixel : out std_logic_vector (11 downto 0));
     end component;
     
+    
+    component end_game_display is
+        port (
+            clk, nrst  : in std_logic;
+            pos_x, pos_y : in std_logic_vector (9 downto 0);
+            score1, score2 : in std_logic_vector (11 downto 0);
+            end_pixel : out std_logic_vector (11 downto 0));
+    end component;
+    
 
     ----------------------------- signal definition ----------------------------------------
     signal curr_pixel : std_logic_vector (11 downto 0);
@@ -290,6 +299,12 @@ architecture Behavioral of game2p is
     -- signals used to speedd up the ps2
 --    signal up_trig, dn_trig, left_trig, right_trig : std_logic;
 
+    -- end game signals
+    signal end_pixel : std_logic_vector(11 downto 0);
+    
+    -- second score signals
+    signal score2 : std_logic_vector(11 downto 0) := (others => '0');
+    signal score2_count : unsigned(11 downto 0) := (others => '0');
 
 begin
 
@@ -329,13 +344,25 @@ begin
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
-        if (rising_edge(clk) and front_clash_car(0) = '0') then
-            if(clk_score_count = "011111111111111111111111111") then
-                clk_score <= clk_score + 1;
-                clk_score_count <= (others => '0') ;
-            else
-                clk_score_count <= clk_score_count + 1;
+        if (rising_edge(clk)) then
+            if(front_clash_car(0) = '0') then
+                if(clk_score_count = "011111111111111111111111111") then
+                    clk_score <= clk_score + 1;
+                    clk_score_count <= (others => '0') ;
+                else
+                    clk_score_count <= clk_score_count + 1;
+                end if;
             end if;
+            
+            if(front_clash_carp2(0) = '0') then
+                if(score2_count = "011111111111111111111111111") then
+                    score2 <= score2 + 1;
+                    score2_count <= (others => '0') ;
+                else
+                    score2_count <= score2_count + 1;
+                end if;
+            end if;
+            
         end if;
     end process;
 
@@ -605,37 +632,39 @@ begin
     -- choose which pixel to be printed on the screen
     process (pos_x, pos_y)
     begin
-        -- withing the display area
-        if(pos_x >= 220 and pos_x <= (image_w + 220)) then
-            if((pos_x >= car_pos.x_start) and (pos_x <= car_pos.x_end) and (pos_y >= car_pos.y_start) and (pos_y <= car_pos.y_end)) then
-                if(car_pixel = X"000") then
-                    curr_pixel <= frame_pixel;
-                else
-                    curr_pixel <= car_pixel;
-                end if;
-            elsif((pos_x >= carp2_pos.x_start) and (pos_x <= carp2_pos.x_end) and (pos_y >= carp2_pos.y_start) and (pos_y <= carp2_pos.y_end)) then
-                if(carp2_pixel = X"000") then
-                    curr_pixel <= frame_pixel;
-                else
-                    curr_pixel <= carp2_pixel;
-                end if;
-            elsif(pos_x >= ob1_pos.x_start) and (pos_x <= ob1_pos.x_end) and (pos_y >= ob1_pos.y_start) and (pos_y <= ob1_pos.y_end) then
-                if(ob1_pixel = X"000") then
-                    curr_pixel <= frame_pixel;
-                else
-                    curr_pixel <= ob1_pixel;
-                end if;
-            else
-                curr_pixel <= frame_pixel;
-            end if;
-        elsif ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 0) and (unsigned(pos_y) <= 15)) then
-            curr_pixel <= score_pixel;
-        elsif ((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 16) and (unsigned(pos_y) <= 31)) then
-            curr_pixel <= score_pixel;
-        -- outside the display area
-        else
-            curr_pixel <= ((others => '0'));
-        end if;
+--        -- withing the display area
+--        if(pos_x >= 220 and pos_x <= (image_w + 220)) then
+--            if((pos_x >= car_pos.x_start) and (pos_x <= car_pos.x_end) and (pos_y >= car_pos.y_start) and (pos_y <= car_pos.y_end)) then
+--                if(car_pixel = X"000") then
+--                    curr_pixel <= frame_pixel;
+--                else
+--                    curr_pixel <= car_pixel;
+--                end if;
+--            elsif((pos_x >= carp2_pos.x_start) and (pos_x <= carp2_pos.x_end) and (pos_y >= carp2_pos.y_start) and (pos_y <= carp2_pos.y_end)) then
+--                if(carp2_pixel = X"000") then
+--                    curr_pixel <= frame_pixel;
+--                else
+--                    curr_pixel <= carp2_pixel;
+--                end if;
+--            elsif(pos_x >= ob1_pos.x_start) and (pos_x <= ob1_pos.x_end) and (pos_y >= ob1_pos.y_start) and (pos_y <= ob1_pos.y_end) then
+--                if(ob1_pixel = X"000") then
+--                    curr_pixel <= frame_pixel;
+--                else
+--                    curr_pixel <= ob1_pixel;
+--                end if;
+--            else
+--                curr_pixel <= frame_pixel;
+--            end if;
+--        elsif ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 0) and (unsigned(pos_y) <= 15)) then
+--            curr_pixel <= score_pixel;
+--        elsif ((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 16) and (unsigned(pos_y) <= 31)) then
+--            curr_pixel <= score_pixel;
+--        -- outside the display area
+--        else
+--            curr_pixel <= ((others => '0'));
+--        end if;
+          
+          curr_pixel <= end_pixel;
     end process;
 
 
@@ -801,6 +830,15 @@ begin
                 high_score => high_score,
                 score => std_logic_vector(clk_score),
                 score_pixel => score_pixel);
+                
+    end_game_display_unit : end_game_display port map(
+                clk => clk,
+                nrst => nrst,
+                pos_x => pos_x,
+                pos_y => pos_y,
+                score1 => "010101111001",
+                score2 => "000111010101",
+                end_pixel => end_pixel);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   
