@@ -33,7 +33,7 @@ use ieee.std_logic_unsigned.all;
 --use UNISIM.VComponents.all;
 use work.mypkg.all;
  
-entity game2p is
+entity gamep2 is
     Port (  clk, nrst: in std_logic;
             -- upp2, dnp2, leftp2, rightp2 : in std_logic;
             ps2d, ps2c: in std_logic;
@@ -42,9 +42,9 @@ entity game2p is
             tx : out std_logic;
             r, g, b : out std_logic_vector (3 downto 0);
             hsync , vsync : out std_logic);
-end game2p;
+end gamep2;
 
-architecture Behavioral of game2p is
+architecture Behavioral of gamep2 is
 
     ----------------------------- component declaration ----------------------------------------
     component VGA_controller is
@@ -177,7 +177,7 @@ architecture Behavioral of game2p is
             pos_x, pos_y : in std_logic_vector(9 downto 0);
             front_clash, back_clash, right_clash, left_clash : out std_logic);
     end component;
-
+    
     component score_display is
         port (
             clk, nrst  : in std_logic;
@@ -194,7 +194,24 @@ architecture Behavioral of game2p is
             score1, score2 : in std_logic_vector (11 downto 0);
             end_pixel : out std_logic_vector (11 downto 0));
     end component;
+
+    --     ----------------------- constat definition -----------------------------------
+    -- constant HD: integer := 640; --horizontal display area
+    -- constant VD: integer := 480; --vertical display area
+    -- constant image_w: integer := 200; -- image width
+    -- constant image_h: integer := 480; -- image height
+    -- constant car_w : integer := 40;
+    -- constant car_h : integer := 40;
+    -- constant carp2_w : integer := 40;
+    -- constant carp2_h : integer := 40;
     
+    -- ------------------------------ type declaration -------------------------------------
+    -- type coordinates is record 
+    --     x_start : std_logic_vector (9 downto 0);
+    --     x_end : std_logic_vector (9 downto 0);
+    --     y_start : std_logic_vector(9 downto 0);
+    --     y_end : std_logic_vector(9 downto 0);
+    -- end record coordinates;
 
     ----------------------------- signal definition ----------------------------------------
     signal curr_pixel : std_logic_vector (11 downto 0);
@@ -290,10 +307,14 @@ architecture Behavioral of game2p is
     signal received_data: std_logic_vector(7 downto 0) := "00000000";
     signal received_done, tx_data_done: std_logic;
     signal baud_gen_tick: std_logic;
-    signal sent_data : std_logic_vector (7 downto 0) := "00000000";   
+    signal sent_data : std_logic_vector (7 downto 0) := "00000000";  
     
-    constant one : std_logic := '1';
+    --- slave signals
+    signal upp2, dnp2, leftp2, rightp2 : std_logic := '0';
 
+
+    constant one : std_logic := '1';
+    
     signal high_score : std_logic_Vector (11 downto 0) := (others => '1'); 
     
     -- signals used to speedd up the ps2
@@ -305,59 +326,61 @@ architecture Behavioral of game2p is
     -- second score signals
     signal score2 : unsigned(11 downto 0) := (others => '0') ;
     signal score2_count :unsigned (26 downto 0) := ((others => '0'));
+    signal score1 : unsigned(11 downto 0) := (others => '0') ;
+    signal score1_count :unsigned (26 downto 0) := ((others => '0'));
     
     -- end game flag
     signal end_game_flag : std_logic := '0';
+    
 
 begin
 
-    left_right <= left & right;
-    up_dn <= up & dn;
+    -- left_right <= received_data (3 downto 2);
+    -- up_dn <= received_data (1 downto 0);
     -- left_rightp2 <= leftp2 & rightp2;
     -- up_dnp2 <= upp2 & dnp2;
-    -- left_rightp2 <= received_data(3 downto 2);
-    -- up_dnp2 <= received_data (1 downto 0);
+    left_rightp2 <= leftp2 & rightp2;
+    up_dnp2 <= upp2 & dnp2;
     speed_condition <= not(speed) & '1' & X"FFFF";
-    sent_data <= "0000" & left_right & up_dn;
+    sent_data <= "0000" & left_rightp2 & up_dnp2;
 
 --    -- mapping from ascii to up, dn, left and right
---    up <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
---    dn <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
---    left <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
---    right <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
+--    upp2 <= '1' when (ps2rx_dout = "00011101" and rx_done_tick = '1') else '0';
+--    dnp2 <= '1' when (ps2rx_dout = "00011011" and rx_done_tick = '1') else '0';
+--    leftp2 <= '1' when (ps2rx_dout = "00011100" and rx_done_tick = '1') else '0';
+--    rightp2 <= '1' when (ps2rx_dout = "00100011" and rx_done_tick = '1') else '0';
 
-    
     -- assign the received data
     process (clk, nrst)
     begin
         if(nrst = '0') then
-            up_dnp2 <= "00";
-            left_rightp2 <= "00";
+            up_dn <= "00";
+            left_right <= "00";
         elsif rising_edge(clk) then
             if(received_done = '1') then
-                left_rightp2 <= received_data(3 downto 2);
-                up_dnp2 <= received_data (1 downto 0);
+                left_right <= received_data(3 downto 2);
+                up_dn <= received_data (1 downto 0);
             else
-                left_rightp2 <= "00";
-                up_dnp2 <= "00";
+                left_right <= "00";
+                up_dn <= "00";
             end if;
-            
         end if;
     end process;
+
 
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
         if (rising_edge(clk)) then
-            if(front_clash_car(0) = '0' and end_game_flag = '0') then
-                if(clk_score_count = "011111111111111111111111111") then
-                    clk_score <= clk_score + 1;
-                    clk_score_count <= (others => '0') ;
+            if(front_clash_car(0) = '0' and end_game_flag = '1') then
+                if(score1_count = "011111111111111111111111111") then
+                    score1 <= score1 + 1;
+                    score1_count <= (others => '0') ;
                 else
-                    clk_score_count <= clk_score_count + 1;
+                    score1_count <= score1 + 1;
                 end if;
             end if;
             
-            if(front_clash_carp2(0) = '0' and end_game_flag = '0') then
+            if(front_clash_carp2(0) = '0' and end_game_flag = '1') then
                 if(score2_count = "011111111111111111111111111") then
                     score2 <= score2 + 1;
                     score2_count <= (others => '0') ;
@@ -368,18 +391,9 @@ begin
             
         end if;
     end process;
-    
-    -- process to end the game if one reach score of score of 500
-    process(clk, nrst)
-    begin
-        if(nrst = '0')then
-            end_game_flag <= '0';
-        elsif(rising_edge(clk))then
-            if((clk_score = 50) or (score2 = 50)) then
-                end_game_flag <= '1';
-            end if;
-        end if;
-    end process;
+
+
+    -----------------------------------------------------------------
 
     -- clock division code
     process(clk)begin
@@ -398,48 +412,48 @@ begin
     variable speed_count : integer := 0;
     begin
         if(nrst = '0') then
-            up <= '0';
-            dn <= '0';
-            left <= '0';
-            right <= '0';
+            upp2 <= '0';
+            dnp2 <= '0';
+            leftp2 <= '0';
+            rightp2 <= '0';
         elsif(rising_edge(clk))then
             if(rx_done_tick = '1') then
                 speed_count := ps2_inc;
                 -- mapping from ascii to up, dn, left and right
                 if(ps2rx_dout = "00011101")then
-                    up <= '1';
+                    upp2 <= '1';
                 else
-                    up <= '0';
+                    upp2 <= '0';
                 end if;
                 
                 if(ps2rx_dout = "00011011") then
-                    dn <= '1';
+                    dnp2 <= '1';
                 else
-                    dn <= '0';
+                    dnp2 <= '0';
                 end if;
                 
                 if(ps2rx_dout = "00011100") then
-                    left <= '1';
+                    leftp2 <= '1';
                 else
-                    left <= '0';
+                    leftp2 <= '0';
                 end if;
                 
                 if(ps2rx_dout = "00100011")then
-                    right <= '1';
+                    rightp2 <= '1';
                 else
-                    right <= '0';
+                    rightp2 <= '0';
                 end if;
             elsif(speed_count = 0) then
-                up <= '0';
-                dn <= '0';
-                left <= '0';
-                right <= '0';
+                upp2 <= '0';
+                dnp2 <= '0';
+                leftp2 <= '0';
+                rightp2 <= '0';
             else
                 speed_count := speed_count - 1;
-                up <= up;
-                dn <= dn;
-                left <= left;
-                right <= right;
+                upp2 <= upp2;
+                dnp2 <= dnp2;
+                leftp2 <= leftp2;
+                rightp2 <= rightp2;
             end if;
         end if;
     end process;
@@ -465,8 +479,8 @@ begin
                     end if;
                 when "10" => 
                     if(car_pos.x_start <= 220)then
-                            car_pos.x_start <= car_pos.x_start;
-                            car_pos.x_end <= car_pos.x_end;
+                        car_pos.x_start <= car_pos.x_start;
+                        car_pos.x_end <= car_pos.x_end;
                     elsif(left_clash_car = "00") then
                         car_pos.x_start <= car_pos.x_start - 1;
                         car_pos.x_end <= car_pos.x_end - 1;
@@ -684,7 +698,6 @@ begin
         end if;
     end process;
 
-
     ----------------------- module instantiation ----------------------------------------------
     VGA_controller_unit : VGA_controller port map ( clk => clk,
                                                     nrst => nrst,
@@ -735,61 +748,61 @@ begin
                             douta => font_word);
 
     bcd : binary_to_bcd 
-            generic map(
-                bits => 12,
-                digits => 4)
-            port map(
-                clk => clk,                           
-                reset_n => nrst,                      
-                ena => '1',                        
-                binary => std_logic_vector(clk_score),
-                busy => bcd_busy,                     
-                bcd => digits);
+        generic map(
+            bits => 12,
+            digits => 4)
+        port map(
+            clk => clk,                           
+            reset_n => nrst,                      
+            ena => '1',                        
+            binary => std_logic_vector(clk_score),
+            busy => bcd_busy,                     
+            bcd => digits);
 
     ps2rx_unit : ps2rx
-            port map(
-                clk => clk, 
-                rst => rst,
-                ps2d => ps2d,
-                ps2c => ps2c,
-                rx_en => '1',
-                rx_done_tick => rx_done_tick,
-                shift_en => ps2rx_shift_en,
-                dout => ps2rx_dout);
+        port map(
+            clk => clk, 
+            rst => rst,
+            ps2d => ps2d,
+            ps2c => ps2c,
+            rx_en => '1',
+            rx_done_tick => rx_done_tick,
+            shift_en => ps2rx_shift_en,
+            dout => ps2rx_dout);
     
     baud_gen_unit : baud_gen 
-            port map(
-                clk => clk,
-                reset => rst,
-                dvsr => "01010001011",
-                tick => baud_gen_tick);
+        port map(
+            clk => clk,
+            reset => rst,
+            dvsr => "01010001011",
+            tick => baud_gen_tick);
 
     uart_tx_unit : uart_tx
-            generic map (
-                DBIT => 8, -- # da ta b i t s
-                SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
-            )
-            port map(
-                clk => clk,
-                reset => rst,
-                tx_start => rx_done_tick,
-                s_tick => baud_gen_tick,
-                din => sent_data,
-                tx_done_tick => tx_data_done,
-                tx => tx);
+        generic map (
+            DBIT => 8, -- # da ta b i t s
+            SB_TICK => 16 -- # t i c k s f o r  t o p sb i t s
+        )
+        port map(
+            clk => clk,
+            reset => rst,
+            tx_start => rx_done_tick,
+            s_tick => baud_gen_tick,
+            din => sent_data,
+            tx_done_tick => tx_data_done,
+            tx => tx);
 
     uart_rx_unit : uart_rx
-            generic map (
-                DBIT => 8, -- # da ta b i t s
-                SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
-            )
-            port map(
-                clk => clk,
-                reset => rst,
-                rx => rx,
-                s_tick => baud_gen_tick,
-                rx_done_tick => received_done,
-                dout => received_data);
+        generic map (
+            DBIT => 8, -- # da ta b i t s
+            SB_TICK => 16 -- # t i c k s f o r s t o p b i t s
+        )
+        port map(
+            clk => clk,
+            reset => rst,
+            rx => rx,
+            s_tick => baud_gen_tick,
+            rx_done_tick => received_done,
+            dout => received_data);
 
     clash_detection_unit1 : clash_detection port map (
                 nrst => nrst,
@@ -838,24 +851,6 @@ begin
                 back_clash => back_clash_carp2(1),
                 right_clash => right_clash_carp2(1),
                 left_clash => left_clash_carp2(1));
-
-    score_display_unit : score_display port map(
-                clk => clk,
-                nrst => nrst,
-                pos_x => pos_x,
-                pos_y => pos_y,
-                high_score => high_score,
-                score => std_logic_vector(clk_score),
-                score_pixel => score_pixel);
-                
-    end_game_display_unit : end_game_display port map(
-                clk => clk,
-                nrst => nrst,
-                pos_x => pos_x,
-                pos_y => pos_y,
-                score1 => std_logic_vector(clk_score),
-                score2 => std_logic_vector(score2),
-                end_pixel => end_pixel);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   
