@@ -290,7 +290,8 @@ architecture Behavioral of game2p is
     signal received_data: std_logic_vector(7 downto 0) := "00000000";
     signal received_done, tx_data_done: std_logic;
     signal baud_gen_tick: std_logic;
-    signal sent_data : std_logic_vector (7 downto 0) := "00000000";   
+    signal sent_data : std_logic_vector (7 downto 0) := "00000000"; 
+    signal uart_tx_en : std_logic := '0'; 
     
     constant one : std_logic := '1';
 
@@ -411,6 +412,7 @@ begin
         elsif(rising_edge(clk))then
             if(rx_done_tick = '1') then
                 speed_count := ps2_inc;
+                uart_tx_en <= '1';
                 -- mapping from ascii to up, dn, left and right
                 if(ps2rx_dout = "00011101")then
                     up <= '1';
@@ -440,12 +442,14 @@ begin
                 dn <= '0';
                 left <= '0';
                 right <= '0';
+                uart_tx_en <= '0';
             else
                 speed_count := speed_count - 1;
                 up <= up;
                 dn <= dn;
                 left <= left;
                 right <= right;
+                uart_tx_en <= '0';
             end if;
         end if;
     end process;
@@ -778,7 +782,7 @@ begin
             port map(
                 clk => clk,
                 reset => rst,
-                tx_start => rx_done_tick,
+                tx_start => uart_tx_en,
                 s_tick => baud_gen_tick,
                 din => sent_data,
                 tx_done_tick => tx_data_done,
