@@ -352,18 +352,25 @@ begin
 
     -- assign the received data
     process (clk, nrst)
+        variable speed_count : integer := 0;
     begin
         if(nrst = '0') then
             up_dn <= "00";
             left_right <= "00";
         elsif rising_edge(clk) then
             if(received_done = '1') then
+                speed_count := ps2_inc;
                 left_right <= received_data(3 downto 2);
                 up_dn <= received_data (1 downto 0);
-            else
-                left_right <= "00";
+            elsif(speed_count = 0) then
                 up_dn <= "00";
+                left_right <= "00";
+            else
+                speed_count := speed_count - 1;
+                up_dn <= up_dn;
+                left_right <= left_right;
             end if;
+            
         end if;
     end process;
 
@@ -371,7 +378,7 @@ begin
     -- score code (clk generation of 1Hz and counting)
     process(clk)begin
         if (rising_edge(clk)) then
-            if(front_clash_car(0) = '0' and end_game_flag = '1') then
+            if(front_clash_car(0) = '0' and end_game_flag = '0') then
                 if(score1_count = "011111111111111111111111111") then
                     score1 <= score1 + 1;
                     score1_count <= (others => '0') ;
@@ -380,7 +387,7 @@ begin
                 end if;
             end if;
             
-            if(front_clash_carp2(0) = '0' and end_game_flag = '1') then
+            if(front_clash_carp2(0) = '0' and end_game_flag = '0') then
                 if(score2_count = "011111111111111111111111111") then
                     score2 <= score2 + 1;
                     score2_count <= (others => '0') ;
@@ -389,6 +396,18 @@ begin
                 end if;
             end if;
             
+        end if;
+    end process;
+    
+    -- process to end the game if one reach score of score of 500
+    process(clk, nrst)
+    begin
+        if(nrst = '0')then
+            end_game_flag <= '0';
+        elsif(rising_edge(clk))then
+            if((clk_score = max_score) or (score2 = max_score)) then
+                end_game_flag <= '1';
+            end if;
         end if;
     end process;
 
@@ -851,6 +870,24 @@ begin
                 back_clash => back_clash_carp2(1),
                 right_clash => right_clash_carp2(1),
                 left_clash => left_clash_carp2(1));
+                
+    score_display_unit : score_display port map(
+                clk => clk,
+                nrst => nrst,
+                pos_x => pos_x,
+                pos_y => pos_y,
+                high_score => high_score,
+                score => std_logic_vector(score2),
+                score_pixel => score_pixel);
+                
+    end_game_display_unit : end_game_display port map(
+                clk => clk,
+                nrst => nrst,
+                pos_x => pos_x,
+                pos_y => pos_y,
+                score1 => std_logic_vector(score1),
+                score2 => std_logic_vector(score2),
+                end_pixel => end_pixel);
 
     -------------------------------------- continous assignment ---------------------------------------
                                   
