@@ -36,6 +36,8 @@ package mypkg is
     constant carp2_h : integer := 40;
     
     constant ps2_inc : integer := 5;
+    
+    constant max_score : integer := 200;
 
     constant high_score_index : char_array (0 to 10) := (
         "010001", -- H index 17

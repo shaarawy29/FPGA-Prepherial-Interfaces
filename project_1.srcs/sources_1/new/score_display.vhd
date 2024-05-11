@@ -62,8 +62,8 @@ begin
     -- process to get the font address either from the char or digits memory
     process (pos_x, pos_y)
     begin
-        if ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 16) and (unsigned(pos_y) <= 31)) then
-            if((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 168)) then
+        if ((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 199) and (unsigned(pos_y) >= 16) and (unsigned(pos_y) <= 31)) then
+            if((unsigned(pos_x) >= 80) and (unsigned(pos_x) <= 167)) then
                 font_rom_addr <= high_score_index(to_integer(unsigned(pos_x(9 downto 3)) - 10)) & pos_y(3 downto 0);
             else
                 case unsigned(pos_x(9 downto 3)) is
@@ -74,8 +74,8 @@ begin
                     when others => font_rom_addr <= ((others => '0'));
                 end case;
             end if;
-        elsif ((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 200) and (unsigned(pos_y) >= 32) and (unsigned(pos_y) <= 47)) then
-            if((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 168)) then
+        elsif ((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 199) and (unsigned(pos_y) >= 32) and (unsigned(pos_y) <= 47)) then
+            if((unsigned(pos_x) >= 120) and (unsigned(pos_x) <= 167)) then
                 font_rom_addr <= score_index(to_integer(unsigned(pos_x(9 downto 3)) - 15)) & pos_y(3 downto 0);
             else
                 case unsigned(pos_x(9 downto 3)) is

@@ -329,17 +329,23 @@ begin
     
     -- assign the received data
     process (clk, nrst)
+        variable speed_count : integer := 0;
     begin
         if(nrst = '0') then
             up_dnp2 <= "00";
             left_rightp2 <= "00";
         elsif rising_edge(clk) then
             if(received_done = '1') then
+                speed_count := ps2_inc;
                 left_rightp2 <= received_data(3 downto 2);
                 up_dnp2 <= received_data (1 downto 0);
-            else
-                left_rightp2 <= "00";
+            elsif(speed_count = 0) then
                 up_dnp2 <= "00";
+                left_rightp2 <= "00";
+            else
+                speed_count := speed_count - 1;
+                up_dnp2 <= up_dnp2;
+                left_rightp2 <= left_rightp2;
             end if;
             
         end if;
@@ -375,7 +381,7 @@ begin
         if(nrst = '0')then
             end_game_flag <= '0';
         elsif(rising_edge(clk))then
-            if((clk_score = 50) or (score2 = 50)) then
+            if((clk_score = max_score) or (score2 = max_score)) then
                 end_game_flag <= '1';
             end if;
         end if;

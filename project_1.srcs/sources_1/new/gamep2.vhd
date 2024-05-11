@@ -383,7 +383,7 @@ begin
                     score1 <= score1 + 1;
                     score1_count <= (others => '0') ;
                 else
-                    score1_count <= score1 + 1;
+                    score1_count <= score1_count + 1;
                 end if;
             end if;
             

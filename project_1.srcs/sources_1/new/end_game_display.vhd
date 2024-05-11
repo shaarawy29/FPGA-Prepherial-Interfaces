@@ -74,7 +74,7 @@ begin
     -- process to get the font address either from the char or digits memory
     process (pos_x, pos_y)
     begin
-        if ((unsigned(pos_x) >= 104) and (unsigned(pos_x) <= 255) and (unsigned(pos_y) >= 0) and (unsigned(pos_y) >= 208) and (unsigned(pos_y) <= 223)) then
+        if ((unsigned(pos_x) >= 104) and (unsigned(pos_x) <= 255) and (unsigned(pos_y) >= 208) and (unsigned(pos_y) <= 223)) then
             if((unsigned(pos_x) >= 104) and (unsigned(pos_x) < 224)) then
                 rom_addr <= player_one_end(to_integer(unsigned(pos_x(9 downto 3)) - 13)) & pos_y(3 downto 0);
             else
@@ -86,7 +86,7 @@ begin
                     when others => rom_addr <= "100100" & pos_y(3 downto 0);
                 end case;
             end if;
-        elsif ((unsigned(pos_x) >= 104) and (unsigned(pos_x) <= 255) and (unsigned(pos_y) >= 16) and (unsigned(pos_y) >= 224) and (unsigned(pos_y) <= 239)) then
+        elsif ((unsigned(pos_x) >= 104) and (unsigned(pos_x) <= 255) and (unsigned(pos_y) >= 224) and (unsigned(pos_y) <= 239)) then
             if((unsigned(pos_x) >= 104) and (unsigned(pos_x) < 224)) then
                 rom_addr <= player_two_end(to_integer(unsigned(pos_x(9 downto 3)) - 13)) & pos_y(3 downto 0);
             else
